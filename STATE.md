@@ -74,6 +74,16 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
+- [x] Fixed the real reason re-login didn't grant the new playlist scope:
+      Spotify silently re-issues a token on whatever scope was already
+      approved if the app was ever authorized before, with no visible
+      prompt - so a newly-added scope never actually reached the user.
+      Added `show_dialog: true` to the authorize request to force the
+      consent screen every time.
+- [x] Added a vinyl Shuffle (matching the Spotify one): swaps the vinyl in
+      a slot with a random other unplayed vinyl elsewhere in the plan.
+      Available on the live "Next up" vinyl card and every vinyl row in
+      Full Set. Verified end-to-end with a simulated click.
 - [x] "Save" for playlists was silent (just said "Playlists saved" with no
       indication whether the fetch actually worked) - the real cause of
       "why can't you pull my playlist" is almost certainly that the login

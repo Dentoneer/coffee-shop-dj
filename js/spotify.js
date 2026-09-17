@@ -2,7 +2,7 @@
 // that's the point of PKCE for a public static site. Used only for catalog
 // search (track lookup, album art); no playback control, no audio-features.
 
-import { Store } from './store.js?v=20260917p';
+import { Store } from './store.js?v=20260917q';
 
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -52,9 +52,14 @@ export async function login() {
     code_challenge_method: 'S256',
     code_challenge: challenge,
     // playlist-read-*: lets the Live Set bridge pull from the DJ's own
-    // playlists instead of only cold catalog search. Anyone who logged in
-    // before this scope was added needs to log out/in once to pick it up.
+    // playlists instead of only cold catalog search.
     scope: 'playlist-read-private playlist-read-collaborative',
+    // Without this, Spotify silently re-issues a token on whatever scope
+    // was already approved if the app was ever authorized before, with no
+    // visible prompt - so adding a new scope later never actually reaches
+    // the user. Forces the consent screen every time so a newly-added
+    // scope is something they can actually see and grant.
+    show_dialog: 'true',
   });
   location.href = `${AUTH_URL}?${params.toString()}`;
 }

@@ -1,8 +1,8 @@
-import { Store, newId } from './store.js?v=20260917p';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917p';
-import { renderTrackForm } from './trackForm.js?v=20260917p';
-import { searchTracks, isLoggedIn, getPlaylistTracks, parsePlaylistId } from './spotify.js?v=20260917p';
-import { createTapTempo } from './tapTempo.js?v=20260917p';
+import { Store, newId } from './store.js?v=20260917q';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917q';
+import { renderTrackForm } from './trackForm.js?v=20260917q';
+import { searchTracks, isLoggedIn, getPlaylistTracks, parsePlaylistId } from './spotify.js?v=20260917q';
+import { createTapTempo } from './tapTempo.js?v=20260917q';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no
@@ -147,6 +147,29 @@ export function renderLiveTab(container) {
 
   function playedSpotifyUris() {
     return Store.getTracks().filter((t) => t.source === 'spotify' && t.playedAt).map((t) => t.spotifyUri);
+  }
+
+  // Swaps the vinyl in this slot with a random other unplayed vinyl
+  // elsewhere in the plan - the vinyl equivalent of Spotify's Shuffle:
+  // a different option with no manual dragging/searching.
+  function shuffleVinylSlot(id) {
+    const tracksById = new Map(Store.getTracks().map((t) => [t.id, t]));
+    const planOrder = Store.getPlanOrder();
+    const idx = planOrder.indexOf(id);
+    if (idx === -1) return;
+    const candidateIdxs = planOrder
+      .map((otherId, i) => ({ otherId, i }))
+      .filter(({ otherId }) => {
+        if (otherId === id) return false;
+        const t = tracksById.get(otherId);
+        return t && !t.played;
+      });
+    if (candidateIdxs.length === 0) return;
+    const { i: pickIdx } = candidateIdxs[Math.floor(Math.random() * candidateIdxs.length)];
+    const newOrder = planOrder.slice();
+    [newOrder[idx], newOrder[pickIdx]] = [newOrder[pickIdx], newOrder[idx]];
+    Store.savePlanOrder(newOrder);
+    refreshTurn();
   }
 
   // A default (untapped) BPM means its position in the tempo-flow plan is
@@ -307,6 +330,7 @@ export function renderLiveTab(container) {
       </div>
       <div class="row">
         <button type="button" id="mark-played-btn">Mark played</button>
+        <button type="button" class="secondary" id="shuffle-vinyl-btn" title="Swap in a random other unplayed vinyl">&#128256; Shuffle</button>
         <button type="button" class="secondary" id="change-vinyl-btn">Change track</button>
       </div>
       <div id="change-vinyl-mount" style="margin-top:0.6rem"></div>
@@ -315,6 +339,7 @@ export function renderLiveTab(container) {
       markPlayed(nv.id);
       refreshTurn();
     });
+    turnCard.querySelector('#shuffle-vinyl-btn').addEventListener('click', () => shuffleVinylSlot(nv.id));
     turnCard.querySelector('#change-vinyl-btn').addEventListener('click', () => {
       const mount = turnCard.querySelector('#change-vinyl-mount');
       renderVinylEditForm(mount, nv, () => refreshTurn());
@@ -649,6 +674,13 @@ export function renderLiveTab(container) {
         moveWrap.appendChild(upBtn);
         moveWrap.appendChild(downBtn);
         row.insertBefore(moveWrap, row.querySelector('.track-meta'));
+        const shuffleBtn = document.createElement('button');
+        shuffleBtn.type = 'button';
+        shuffleBtn.className = 'secondary';
+        shuffleBtn.title = 'Swap in a random other unplayed vinyl';
+        shuffleBtn.textContent = '\u{1F500}';
+        shuffleBtn.addEventListener('click', () => shuffleVinylSlot(t.id));
+        row.appendChild(shuffleBtn);
         const changeBtn = document.createElement('button');
         changeBtn.type = 'button';
         changeBtn.className = 'secondary';

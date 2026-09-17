@@ -1,8 +1,49 @@
-import { Store, newId } from './store.js?v=20260917n';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917n';
-import { renderTrackForm } from './trackForm.js?v=20260917n';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20260917n';
-import { createTapTempo } from './tapTempo.js?v=20260917n';
+import { Store, newId } from './store.js?v=20260917o';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917o';
+import { renderTrackForm } from './trackForm.js?v=20260917o';
+import { searchTracks, isLoggedIn, getPlaylistTracks, parsePlaylistId } from './spotify.js?v=20260917o';
+import { createTapTempo } from './tapTempo.js?v=20260917o';
+
+// Fraction of Spotify bridge picks that come from a fresh catalog search
+// instead of the DJ's own playlists, for variety. Playlist tracks carry no
+// tempo data either (same limitation as search), so this is about mixing
+// familiar with new, not a smarter pick.
+const NEW_MUSIC_FRACTION = 0.1;
+
+// Cached across renders for the life of the page load - playlists don't
+// change mid-set, so there's no reason to refetch on every render.
+let playlistPoolPromise = null;
+function getPlaylistPool() {
+  if (playlistPoolPromise) return playlistPoolPromise;
+  const raw = Store.getSettings().spotifyPlaylistUrls || '';
+  const ids = raw.split(/[,\n]/).map((s) => s.trim()).filter(Boolean).map(parsePlaylistId);
+  if (ids.length === 0 || !isLoggedIn()) {
+    playlistPoolPromise = Promise.resolve([]);
+    return playlistPoolPromise;
+  }
+  playlistPoolPromise = Promise.all(ids.map((id) => getPlaylistTracks(id).catch((e) => {
+    console.warn('Playlist fetch failed for', id, e);
+    return [];
+  }))).then((lists) => lists.flat());
+  return playlistPoolPromise;
+}
+
+// The single source of "get me a Spotify bridge candidate" - used for the
+// initial auto-suggestion, the Full Set lookahead, and the Shuffle button,
+// so all three pull from the same 90/10 playlist/discovery mix.
+async function pickSpotifyCandidate(autoQuery, excludeUris = []) {
+  const pool = await getPlaylistPool();
+  const excluded = new Set(excludeUris.filter(Boolean));
+  const available = pool.filter((t) => !excluded.has(t.uri));
+  const useDiscovery = available.length === 0 || Math.random() < NEW_MUSIC_FRACTION;
+  if (!useDiscovery) {
+    const pick = available[Math.floor(Math.random() * available.length)];
+    return { ...pick, fromPlaylist: true };
+  }
+  const results = await searchTracks(autoQuery, 5);
+  const fresh = results.find((r) => !excluded.has(r.uri)) || results[0] || null;
+  return fresh ? { ...fresh, fromPlaylist: false } : null;
+}
 
 // Spotify's actual recommendation/audio-features endpoints are blocked for
 // any developer app created after Nov 2024 (403, permanently, short of
@@ -102,6 +143,10 @@ export function renderLiveTab(container) {
     if (t.album) bits.push(t.album);
     if (t.trackNumber != null) bits.push(`#${t.trackNumber}`);
     return bits.length ? `${t.title} &middot; ${bits.join(' ')}` : t.title;
+  }
+
+  function playedSpotifyUris() {
+    return Store.getTracks().filter((t) => t.source === 'spotify' && t.playedAt).map((t) => t.spotifyUri);
   }
 
   // A default (untapped) BPM means its position in the tempo-flow plan is
@@ -296,6 +341,7 @@ export function renderLiveTab(container) {
       <div id="spotify-suggestion-row"></div>
       <div class="row" id="spotify-action-row" style="display:none;">
         <button type="button" id="spotify-play-suggestion">Play this</button>
+        <button type="button" class="secondary" id="spotify-shuffle-btn" title="Get a different suggestion">&#128256; Shuffle</button>
         <button type="button" class="secondary" id="spotify-change-btn">Change</button>
       </div>
       <div id="spotify-search-mount" style="margin-top:0.6rem"></div>
@@ -338,7 +384,9 @@ export function renderLiveTab(container) {
           ${r.albumArt ? `<img src="${r.albumArt}" />` : ''}
           <div class="track-meta">
             <div class="title">${r.title}</div>
-            <div class="sub">${r.artist} &middot; ${r.album || ''}${r.trackNumber != null ? ` #${r.trackNumber}` : ''}</div>
+            <div class="sub">${r.artist} &middot; ${r.album || ''}${r.trackNumber != null ? ` #${r.trackNumber}` : ''}
+              ${r.fromPlaylist ? ' &middot; <span style="color:var(--accent2)">from your playlist</span>' : ' &middot; new'}
+            </div>
           </div>
         </div>
       `;
@@ -347,6 +395,14 @@ export function renderLiveTab(container) {
       playBtn.style.display = '';
       playBtn.onclick = () => playResult(r);
     }
+
+    turnCard.querySelector('#spotify-shuffle-btn').addEventListener('click', async () => {
+      const rowEl = turnCard.querySelector('#spotify-suggestion-row');
+      rowEl.innerHTML = '<p class="hint">Shuffling…</p>';
+      const pick = await pickSpotifyCandidate(autoQuery, playedSpotifyUris());
+      if (afterVinylId && pick) Store.setPlannedSpotifyFor(afterVinylId, pick);
+      renderSuggestion(pick);
+    });
 
     function resultRow(r, onPick) {
       const row = document.createElement('div');
@@ -413,8 +469,7 @@ export function renderLiveTab(container) {
     if (planned) {
       renderSuggestion(planned);
     } else if (afterVinylId) {
-      searchTracks(autoQuery, 1).then((results) => {
-        const pick = results[0] || null;
+      pickSpotifyCandidate(autoQuery, playedSpotifyUris()).then((pick) => {
         if (pick) Store.setPlannedSpotifyFor(afterVinylId, pick);
         renderSuggestion(pick);
       }).catch(() => renderSuggestion(null));
@@ -489,6 +544,23 @@ export function renderLiveTab(container) {
       refreshTurn();
     }
 
+    // Guaranteed-to-work fallback for the drag (touch/pointer drag can be
+    // finicky depending on browser/device) - swaps this vinyl with its
+    // upcoming neighbor in the same direction.
+    function moveVinyl(id, delta) {
+      const planOrder = Store.getPlanOrder();
+      const idx = planOrder.indexOf(id);
+      const swapWith = idx + delta;
+      if (idx === -1 || swapWith < 0 || swapWith >= planOrder.length) return;
+      const tracksById = new Map(snap.tracks.map((t) => [t.id, t]));
+      const other = tracksById.get(planOrder[swapWith]);
+      if (other?.played) return; // never swap into the already-played history
+      const newOrder = planOrder.slice();
+      [newOrder[idx], newOrder[swapWith]] = [newOrder[swapWith], newOrder[idx]];
+      Store.savePlanOrder(newOrder);
+      refreshTurn();
+    }
+
     function onDragMove(e) {
       if (!dragId) return;
       vinylRowEls().forEach((r) => r.classList.remove('drag-over'));
@@ -511,10 +583,10 @@ export function renderLiveTab(container) {
 
     function makeDragHandle(id, row) {
       const handle = document.createElement('span');
-      handle.textContent = '⠿'; // ⠿
       handle.className = 'drag-handle';
       handle.addEventListener('pointerdown', (e) => {
         e.preventDefault();
+        handle.setPointerCapture?.(e.pointerId);
         dragId = id;
         dragRow = row;
         row.style.opacity = '0.4';
@@ -553,6 +625,30 @@ export function renderLiveTab(container) {
           </div>
         `;
         row.prepend(makeDragHandle(t.id, row));
+        // Up/down buttons are a guaranteed-to-work fallback for reordering
+        // if a drag doesn't register cleanly on a given device/browser.
+        const moveWrap = document.createElement('span');
+        moveWrap.style.display = 'flex';
+        moveWrap.style.flexDirection = 'column';
+        moveWrap.style.flex = 'none';
+        const upBtn = document.createElement('button');
+        upBtn.type = 'button';
+        upBtn.className = 'secondary';
+        upBtn.textContent = '▲';
+        upBtn.style.padding = '0.1rem 0.4rem';
+        upBtn.style.fontSize = '0.7rem';
+        upBtn.addEventListener('click', () => moveVinyl(t.id, -1));
+        const downBtn = document.createElement('button');
+        downBtn.type = 'button';
+        downBtn.className = 'secondary';
+        downBtn.textContent = '▼';
+        downBtn.style.padding = '0.1rem 0.4rem';
+        downBtn.style.fontSize = '0.7rem';
+        downBtn.style.marginTop = '0.2rem';
+        downBtn.addEventListener('click', () => moveVinyl(t.id, 1));
+        moveWrap.appendChild(upBtn);
+        moveWrap.appendChild(downBtn);
+        row.insertBefore(moveWrap, row.querySelector('.track-meta'));
         const changeBtn = document.createElement('button');
         changeBtn.type = 'button';
         changeBtn.className = 'secondary';
@@ -575,13 +671,30 @@ export function renderLiveTab(container) {
 
       function fillRow(pick, { loading = false, errorMsg = null } = {}) {
         const placeholder = loading ? 'TBD — finding a match…' : 'TBD — no auto-match, tap Change to search';
+        const sourceTag = pick
+          ? (pick.fromPlaylist ? ' &middot; <span style="color:var(--accent2)">from your playlist</span>' : ' &middot; new')
+          : '';
         row.innerHTML = `
           <span class="badge spotify">SPOTIFY</span>
           <div class="track-meta">
             <div class="title">${pick ? pick.title : placeholder}</div>
-            <div class="sub">${pick ? `${pick.artist}${pick.album ? ` &middot; ${pick.album}` : ''}` : (errorMsg || '')}${entry.upNow ? ' (bridging next, see above)' : ''}</div>
+            <div class="sub">${pick ? `${pick.artist}${pick.album ? ` &middot; ${pick.album}` : ''}` : (errorMsg || '')}${sourceTag}${entry.upNow ? ' (bridging next, see above)' : ''}</div>
           </div>
         `;
+        const shuffleBtn = document.createElement('button');
+        shuffleBtn.type = 'button';
+        shuffleBtn.className = 'secondary';
+        shuffleBtn.title = 'Get a different suggestion';
+        shuffleBtn.textContent = '\u{1F500}';
+        shuffleBtn.addEventListener('click', async () => {
+          if (!entry.afterVinylId) return;
+          shuffleBtn.disabled = true;
+          const bt2 = getBridgeTarget(entry.leftVinyl, entry.rightVinyl, Store.getSettings());
+          const newPick = await pickSpotifyCandidate(buildAutoQuery(bt2), playedSpotifyUris());
+          if (newPick) Store.setPlannedSpotifyFor(entry.afterVinylId, newPick);
+          fillRow(newPick);
+        });
+        row.appendChild(shuffleBtn);
         const changeBtn = document.createElement('button');
         changeBtn.type = 'button';
         changeBtn.className = 'secondary';
@@ -656,8 +769,7 @@ export function renderLiveTab(container) {
             const bt2 = getBridgeTarget(entry.leftVinyl, entry.rightVinyl, Store.getSettings());
             const query = buildAutoQuery(bt2);
             try {
-              const results = await searchTracks(query, 1);
-              const pick = results[0] || null;
+              const pick = await pickSpotifyCandidate(query, playedSpotifyUris());
               if (pick) {
                 Store.setPlannedSpotifyFor(entry.afterVinylId, pick);
                 fillRow(pick);

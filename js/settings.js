@@ -1,5 +1,5 @@
-import { Store } from './store.js?v=20260917n';
-import { login, logout, isLoggedIn, handleRedirect } from './spotify.js?v=20260917n';
+import { Store } from './store.js?v=20260917o';
+import { login, logout, isLoggedIn, handleRedirect } from './spotify.js?v=20260917o';
 
 export function renderSettingsTab(container) {
   const settings = Store.getSettings();
@@ -12,6 +12,12 @@ export function renderSettingsTab(container) {
       <p class="hint">Register a free app at developer.spotify.com/dashboard, add
         <code id="s-redirect-uri"></code> as a Redirect URI, and paste the Client ID here.</p>
       <div id="s-spotify-status"></div>
+      <label>Your playlist(s) for Spotify bridges</label>
+      <textarea id="s-playlists" rows="2" placeholder="Paste one or more playlist links/IDs, separated by commas or new lines" style="width:100%;">${settings.spotifyPlaylistUrls}</textarea>
+      <p class="hint">Live Set picks ~90% of Spotify bridges from these, ~10% fresh from search, for variety.
+        Leave blank to use search only. Needs the <code>playlist-read</code> scope — if you logged in before
+        this existed, log out and back in once to grant it.</p>
+      <div style="margin-top:0.4rem"><button type="button" class="secondary" id="s-save-playlists">Save</button></div>
     </div>
 
     <div class="card">
@@ -60,6 +66,11 @@ export function renderSettingsTab(container) {
 
   container.querySelector('#s-client-id').addEventListener('change', (e) => {
     Store.updateSettings({ spotifyClientId: e.target.value.trim() });
+  });
+
+  container.querySelector('#s-save-playlists').addEventListener('click', () => {
+    Store.updateSettings({ spotifyPlaylistUrls: container.querySelector('#s-playlists').value.trim() });
+    container.querySelector('#s-backup-status').textContent = 'Playlists saved.';
   });
 
   container.querySelector('#s-save-arc').addEventListener('click', () => {

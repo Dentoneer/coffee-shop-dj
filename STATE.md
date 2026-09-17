@@ -74,6 +74,24 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
+- [x] Hardened the drag-to-reorder after user reported it not working:
+      bigger CSS-drawn handle (was a tiny Unicode glyph, likely too small
+      a touch/click target), pointer capture on the handle, and - most
+      importantly - added guaranteed-to-work ▲/▼ move buttons on every
+      upcoming vinyl row as a fallback that needs no drag gesture at all.
+      Verified both the up-arrow swap and its played-neighbor guard with
+      simulated clicks.
+- [x] Spotify bridge picks now mix from the DJ's own playlists: added
+      Settings field for playlist URL(s)/IDs, `spotify.js`'s
+      `getPlaylistTracks`/`parsePlaylistId`, and login scope
+      `playlist-read-private playlist-read-collaborative` (existing
+      logins need to log out/in once to pick up the new scope). New
+      `pickSpotifyCandidate()` in liveset.js is the single source for
+      every Spotify pick (auto-suggest, Full Set lookahead, Shuffle):
+      ~90% from the playlist pool, ~10% fresh catalog search, excluding
+      already-played URIs. Every Spotify row shows "from your playlist"
+      vs "new" and a new &#128256; Shuffle button for an instant reroll
+      with no typing. Verified visually with a faked playlist pick.
 - [x] Added drag-to-reorder for upcoming vinyl rows in Full Set. Uses
       Pointer Events (not native HTML5 drag-and-drop) so it works on
       touch as well as mouse - a `.drag-handle` per row, drop target

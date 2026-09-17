@@ -19,6 +19,7 @@ const DEFAULT_SETTINGS = {
   setStartedAt: null,
   autoDrift: true,
   leverOverride: null, // manual value when auto-drift is paused
+  spotifyPlaylistUrls: '', // comma/newline-separated playlist URLs or IDs
 };
 
 function readJSON(key, fallback) {

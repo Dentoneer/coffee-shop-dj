@@ -2,7 +2,7 @@
 // that's the point of PKCE for a public static site. Used only for catalog
 // search (track lookup, album art); no playback control, no audio-features.
 
-import { Store } from './store.js?v=20260917n';
+import { Store } from './store.js?v=20260917o';
 
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -51,7 +51,10 @@ export async function login() {
     redirect_uri: redirectUri(),
     code_challenge_method: 'S256',
     code_challenge: challenge,
-    scope: '',
+    // playlist-read-*: lets the Live Set bridge pull from the DJ's own
+    // playlists instead of only cold catalog search. Anyone who logged in
+    // before this scope was added needs to log out/in once to pick it up.
+    scope: 'playlist-read-private playlist-read-collaborative',
   });
   location.href = `${AUTH_URL}?${params.toString()}`;
 }
@@ -176,6 +179,48 @@ export async function getAlbumTracks(albumId, limit = 50) {
     artist: t.artists.map((a) => a.name).join(', '),
     uri: t.uri,
   }));
+}
+
+/** Accepts a full playlist URL, a spotify: URI, or a bare ID and returns the ID. */
+export function parsePlaylistId(input) {
+  const s = input.trim();
+  const urlMatch = s.match(/playlist[/:]([a-zA-Z0-9]+)/);
+  if (urlMatch) return urlMatch[1];
+  return s;
+}
+
+/** Up to `limit` tracks from one of the DJ's own playlists (paginated 50 at a time). */
+export async function getPlaylistTracks(playlistId, limit = 100) {
+  const token = await getValidToken();
+  const out = [];
+  for (let offset = 0; offset < limit; offset += 50) {
+    const params = new URLSearchParams({
+      limit: String(Math.min(50, limit - offset)),
+      offset: String(offset),
+      fields: 'items(track(name,artists,album(name,images),track_number,uri,external_urls)),total',
+    });
+    const res = await fetch(`${API_BASE}/playlists/${playlistId}/tracks?${params.toString()}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`Spotify playlist fetch failed: ${res.status}`);
+    const data = await res.json();
+    const items = data.items || [];
+    items.forEach((item) => {
+      const t = item.track;
+      if (!t) return;
+      out.push({
+        title: t.name,
+        artist: t.artists.map((a) => a.name).join(', '),
+        album: t.album?.name,
+        trackNumber: t.track_number ?? null,
+        albumArt: t.album?.images?.[2]?.url || t.album?.images?.[0]?.url || null,
+        uri: t.uri,
+        externalUrl: t.external_urls?.spotify,
+      });
+    });
+    if (items.length < 50) break; // reached the end of the playlist
+  }
+  return out;
 }
 
 export function logout() {

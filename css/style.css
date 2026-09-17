@@ -200,14 +200,36 @@ button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 
 .drag-handle {
   flex: none;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: grab;
   touch-action: none;
-  color: var(--ink-soft);
-  font-size: 1.1rem;
-  padding: 0 0.2rem;
   user-select: none;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.03);
 }
-.drag-handle:active { cursor: grabbing; color: var(--accent2); }
+.drag-handle::before {
+  content: '';
+  width: 1.1rem;
+  height: 0.7rem;
+  background-image:
+    linear-gradient(var(--ink-soft), var(--ink-soft)),
+    linear-gradient(var(--ink-soft), var(--ink-soft)),
+    linear-gradient(var(--ink-soft), var(--ink-soft));
+  background-repeat: no-repeat;
+  background-size: 100% 2px;
+  background-position: top, center, bottom;
+}
+.drag-handle:active { cursor: grabbing; background: var(--accent-soft); }
+.drag-handle:active::before {
+  background-image:
+    linear-gradient(var(--accent2), var(--accent2)),
+    linear-gradient(var(--accent2), var(--accent2)),
+    linear-gradient(var(--accent2), var(--accent2));
+}
 
 .track-row.drag-over {
   outline: 2px dashed var(--accent2);

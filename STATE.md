@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-09-17_
+_Last updated: 2026-09-17 (later same day)_
 
 ## Current status
 
@@ -56,3 +56,9 @@ actual turntable.
       leave as-is, correct opportunistically if the user brings it up.
 - [ ] Every future push to `master` auto-deploys to Pages — no separate
       deploy step needed.
+- [x] Added a "Song title" vs "Just the vinyl (pick a song for me)" toggle
+      to the shared add-track form (`js/trackForm.js`) for live guest
+      requests — vinyl mode searches Spotify albums instead of tracks and
+      auto-picks the first track via `spotify.js`'s new `searchAlbums`/
+      `getAlbumFirstTrack`. Falls back to a clearly-labeled "(DJ's choice,
+      from <album>)" placeholder if no Spotify match is picked.

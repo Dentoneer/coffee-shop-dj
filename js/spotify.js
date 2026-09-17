@@ -144,6 +144,36 @@ export async function searchTracks(query, limit = 8) {
   }));
 }
 
+/** Search the Spotify catalog for albums (used when the DJ only has the vinyl/album name, not a specific song). */
+export async function searchAlbums(query, limit = 5) {
+  const token = await getValidToken();
+  const params = new URLSearchParams({ q: query, type: 'album', limit: String(limit) });
+  const res = await fetch(`${API_BASE}/search?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Spotify album search failed: ${res.status}`);
+  const data = await res.json();
+  return (data.albums?.items || []).map((a) => ({
+    id: a.id,
+    name: a.name,
+    artist: a.artists.map((x) => x.name).join(', '),
+    albumArt: a.images?.[2]?.url || a.images?.[0]?.url || null,
+  }));
+}
+
+/** First track of an album, for auto-picking a song when the DJ only knows the vinyl. */
+export async function getAlbumFirstTrack(albumId) {
+  const token = await getValidToken();
+  const res = await fetch(`${API_BASE}/albums/${albumId}/tracks?limit=1`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Spotify album tracks failed: ${res.status}`);
+  const data = await res.json();
+  const t = data.items?.[0];
+  if (!t) return null;
+  return { title: t.name, artist: t.artists.map((a) => a.name).join(', '), uri: t.uri };
+}
+
 export function logout() {
   Store.clearSpotifyAuth();
 }

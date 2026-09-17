@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coffee Shop DJ</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>&#9749; Coffee Shop DJ</h1>
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="live">Live Set</button>
+      <button class="tab-btn" data-tab="crate">Crate Builder</button>
+      <button class="tab-btn" data-tab="settings">Settings</button>
+    </nav>
+  </header>
+
+  <main id="app">
+    <section id="tab-live" class="tab-panel active"></section>
+    <section id="tab-crate" class="tab-panel"></section>
+    <section id="tab-settings" class="tab-panel"></section>
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

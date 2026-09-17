@@ -107,6 +107,16 @@ export const Store = {
     writeJSON(KEYS.liveState, state);
   },
 
+  // Clears tracks/plan/live-progress only - keeps the Spotify Client ID,
+  // Spotify login, and set-arc settings, since those are annoying to redo
+  // (especially the Client ID) and have nothing to do with "start a fresh
+  // crate."
+  resetSetData() {
+    localStorage.removeItem(KEYS.tracks);
+    localStorage.removeItem(KEYS.planOrder);
+    localStorage.removeItem(KEYS.liveState);
+  },
+
   exportAll() {
     return {
       tracks: Store.getTracks(),

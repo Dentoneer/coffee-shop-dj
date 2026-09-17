@@ -84,6 +84,10 @@ actual turntable.
 - [x] Added a "Guest crate" card to Live Set — every guest-requested track
       in one place (artist/album/track#/song/BPM/energy/played status),
       separate from the full mixed timeline.
+- [x] Fixed "Reset" wiping the Spotify Client ID and login: it was calling
+      `localStorage.clear()` (everything). New `Store.resetSetData()`
+      clears only tracks/planOrder/liveState; Settings button relabeled
+      "Reset crate/set" and its confirm text says what it keeps.
 - Root-caused a user report of "no Full set, no Spotify auto-search" to
   browser cache serving a pre-update copy of the JS (confirmed via curl
   that the deployed files were already current) — not a real bug. No

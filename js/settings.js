@@ -29,12 +29,15 @@ export function renderSettingsTab(container) {
       <h3>Backup</h3>
       <div class="row">
         <button type="button" class="secondary" id="s-export">Export JSON</button>
-        <button type="button" class="secondary" id="s-reset">Reset everything</button>
+        <button type="button" class="secondary" id="s-reset">Reset crate/set</button>
       </div>
       <label>Import (paste JSON)</label>
       <textarea id="s-import-text" rows="3" style="width:100%;font-family:monospace;"></textarea>
       <div style="margin-top:0.5rem"><button type="button" id="s-import">Import</button></div>
       <p class="hint" id="s-backup-status"></p>
+      <p class="hint">"Reset crate/set" clears tracks, the plan, and live progress only —
+        it keeps your Spotify Client ID and login. There's no button that wipes those;
+        edit or clear the Client ID field above yourself if you ever need to.</p>
     </div>
   `;
 
@@ -89,8 +92,8 @@ export function renderSettingsTab(container) {
   });
 
   container.querySelector('#s-reset').addEventListener('click', () => {
-    if (!confirm('This clears all tracks, plan order, and settings on this device. Continue?')) return;
-    localStorage.clear();
+    if (!confirm('This clears your tracks, plan, and live progress on this device (keeps your Spotify Client ID and login). Continue?')) return;
+    Store.resetSetData();
     location.reload();
   });
 }

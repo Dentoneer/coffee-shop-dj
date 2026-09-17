@@ -2,11 +2,16 @@
 // Live Set's "add guest vinyl" flow. Artist + album are the record; song
 // title/track number are optional and can come from a direct Spotify
 // track search (one click - track results already carry album + track
-// number) or be left blank for "DJ picks by ear."
+// number) or be left blank for "DJ picks by ear." Picking a Spotify result
+// saves the track immediately - no separate "now click Add" step, since
+// that extra step was repeatedly missed live. Tempo defaults to a neutral
+// 100 BPM if not tapped yet; fix it later via the "Change" editor.
 
-import { FLAVOR_TAGS, newId, Store } from './store.js?v=20260917g';
-import { createTapTempo } from './tapTempo.js?v=20260917g';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20260917g';
+import { FLAVOR_TAGS, newId, Store } from './store.js?v=20260917h';
+import { createTapTempo } from './tapTempo.js?v=20260917h';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20260917h';
+
+const DEFAULT_BPM = 100;
 
 /**
  * @param {HTMLElement} container
@@ -37,10 +42,10 @@ export function renderTrackForm(container, opts) {
         <input type="number" id="tf-tracknum" placeholder="Track #" style="flex:none;width:6rem;" />
       </div>
       ${source === 'vinyl' ? `
-        <button type="button" class="secondary" id="tf-spotify-lookup">Look up song on Spotify</button>
+        <button type="button" class="secondary" id="tf-spotify-lookup">Look up song on Spotify (picking one saves it immediately)</button>
         <div id="tf-spotify-results"></div>
       ` : ''}
-      <label>Tempo (tap along to the beat)</label>
+      <label>Tempo (tap along to the beat) <span class="hint">(optional — defaults to ${DEFAULT_BPM}, fix later via Change)</span></label>
       <div class="tempo-readout" id="tf-bpm-readout">-- BPM</div>
       <div class="row">
         <button type="button" id="tf-tap">Tap</button>
@@ -90,6 +95,65 @@ export function renderTrackForm(container, opts) {
     currentBpm = e.target.value ? Number(e.target.value) : null;
   });
 
+  function resetForm() {
+    $('#tf-artist').value = '';
+    if (source === 'vinyl') $('#tf-album').value = '';
+    $('#tf-title').value = '';
+    $('#tf-tracknum').value = '';
+    setBpm(null);
+    $('#tf-energy').value = 3;
+    selectedFlavors = new Set();
+    flavorsEl.querySelectorAll('.chip').forEach((c) => c.classList.remove('selected'));
+    spotifyMatch = null;
+    const resultsEl = container.querySelector('#tf-spotify-results');
+    if (resultsEl) resultsEl.innerHTML = '';
+  }
+
+  function saveTrack() {
+    const artist = $('#tf-artist').value.trim();
+    const album = source === 'vinyl' ? $('#tf-album').value.trim() : '';
+    const songTitle = $('#tf-title').value.trim();
+    const trackNumberRaw = $('#tf-tracknum').value.trim();
+    const trackNumber = trackNumberRaw ? Number(trackNumberRaw) : null;
+    const statusEl = $('#tf-status');
+
+    if (!artist || (source === 'vinyl' && !album) || (source === 'spotify' && !songTitle)) {
+      statusEl.textContent = source === 'vinyl'
+        ? 'Artist and vinyl/album title are required.'
+        : 'Artist and song title are required.';
+      return false;
+    }
+
+    const usedDefaultBpm = source === 'vinyl' && currentBpm == null;
+    const displayTitle = songTitle || "(DJ's choice)";
+
+    const track = {
+      id: newId(),
+      title: source === 'vinyl' ? displayTitle : songTitle,
+      artist,
+      album: source === 'vinyl' ? album : null,
+      trackNumber,
+      source,
+      bpm: currentBpm ?? DEFAULT_BPM,
+      energy: Number($('#tf-energy').value),
+      flavorTags: Array.from(selectedFlavors),
+      guestRequested,
+      played: false,
+      playedAt: null,
+      addedAt: Date.now(),
+      spotifyArt: spotifyMatch?.albumArt || null,
+      spotifyUri: spotifyMatch?.uri || null,
+    };
+    Store.addTrack(track);
+    statusEl.textContent = (source === 'vinyl'
+      ? `Added "${album}" — ${artist}${songTitle ? ` (${songTitle})` : ''}.`
+      : `Added "${songTitle}" — ${artist}.`)
+      + (usedDefaultBpm ? ` (BPM defaulted to ${DEFAULT_BPM} — tap tempo or use Change to fix it.)` : '');
+    onSave && onSave(track);
+    resetForm();
+    return true;
+  }
+
   if (source === 'vinyl') {
     $('#tf-spotify-lookup').addEventListener('click', async () => {
       const resultsEl = $('#tf-spotify-results');
@@ -124,14 +188,7 @@ export function renderTrackForm(container, opts) {
             $('#tf-album').value = r.album || album;
             $('#tf-title').value = r.title;
             $('#tf-tracknum').value = r.trackNumber ?? '';
-            resultsEl.innerHTML = `
-              <p style="color:var(--accent);font-weight:bold;">
-                &#10003; Matched: ${r.trackNumber != null ? `#${r.trackNumber} ` : ''}${r.title} — ${r.album || ''}.
-                This only fills in the fields — tap Tempo below, then click
-                "${guestRequested ? 'Add guest request' : 'Add to crate'}" to actually save it.
-              </p>
-            `;
-            $('#tf-tap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            saveTrack(); // picking a result adds it right away, no extra click
           });
           resultsEl.appendChild(row);
         });
@@ -141,61 +198,5 @@ export function renderTrackForm(container, opts) {
     });
   }
 
-  $('#tf-save').addEventListener('click', () => {
-    const artist = $('#tf-artist').value.trim();
-    const album = source === 'vinyl' ? $('#tf-album').value.trim() : '';
-    const songTitle = $('#tf-title').value.trim();
-    const trackNumberRaw = $('#tf-tracknum').value.trim();
-    const trackNumber = trackNumberRaw ? Number(trackNumberRaw) : null;
-    const statusEl = $('#tf-status');
-
-    if (!artist || (source === 'vinyl' && !album) || (source === 'spotify' && !songTitle)) {
-      statusEl.textContent = source === 'vinyl'
-        ? 'Artist and vinyl/album title are required.'
-        : 'Artist and song title are required.';
-      return;
-    }
-    if (source === 'vinyl' && currentBpm == null) {
-      statusEl.textContent = 'Tap the tempo (or type a BPM) so it can be placed in the plan.';
-      return;
-    }
-
-    const displayTitle = songTitle || "(DJ's choice)";
-
-    const track = {
-      id: newId(),
-      title: source === 'vinyl' ? displayTitle : songTitle,
-      artist,
-      album: source === 'vinyl' ? album : null,
-      trackNumber,
-      source,
-      bpm: currentBpm,
-      energy: Number($('#tf-energy').value),
-      flavorTags: Array.from(selectedFlavors),
-      guestRequested,
-      played: false,
-      playedAt: null,
-      addedAt: Date.now(),
-      spotifyArt: spotifyMatch?.albumArt || null,
-      spotifyUri: spotifyMatch?.uri || null,
-    };
-    Store.addTrack(track);
-    statusEl.textContent = source === 'vinyl'
-      ? `Added "${album}" — ${artist}${songTitle ? ` (${songTitle})` : ''}.`
-      : `Added "${songTitle}" — ${artist}.`;
-    onSave && onSave(track);
-
-    // Reset for the next entry.
-    $('#tf-artist').value = '';
-    if (source === 'vinyl') $('#tf-album').value = '';
-    $('#tf-title').value = '';
-    $('#tf-tracknum').value = '';
-    setBpm(null);
-    $('#tf-energy').value = 3;
-    selectedFlavors = new Set();
-    flavorsEl.querySelectorAll('.chip').forEach((c) => c.classList.remove('selected'));
-    spotifyMatch = null;
-    const resultsEl = container.querySelector('#tf-spotify-results');
-    if (resultsEl) resultsEl.innerHTML = '';
-  });
+  $('#tf-save').addEventListener('click', () => saveTrack());
 }

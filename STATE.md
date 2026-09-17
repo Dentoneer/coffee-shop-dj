@@ -74,10 +74,15 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
-- [x] Guest-vinyl Spotify search results only filled form fields, never
-      auto-saved - not obvious live. Confirmation message now bold and
-      explicit about the remaining two steps (tap Tempo, click Add), and
-      auto-scrolls to Tempo.
+- [x] Changed behavior per explicit user ask: picking a Spotify search
+      result in the add-track form now saves the track immediately (no
+      separate "now click Add" step at all - the earlier "make the message
+      louder" fix wasn't enough, user wanted the two-step gone). Tempo is
+      optional and defaults to 100 BPM if not tapped first; fix it later
+      via the "Change" editor, which now also has its own tap-tempo/BPM
+      field and re-runs plan insertion if the BPM actually changed (so a
+      corrected tempo moves the track to its right spot instead of leaving
+      it wherever the default put it). Verified end-to-end headlessly.
 - [x] TBD gap rows now show the real failure (error message or "0 results
       for <query>") instead of a silent console-only warning - needed for
       diagnosing why gaps 2/3 still failed after the indexing fix.

@@ -1,7 +1,8 @@
-import { Store, newId } from './store.js?v=20260917g';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917g';
-import { renderTrackForm } from './trackForm.js?v=20260917g';
-import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917g';
+import { Store, newId } from './store.js?v=20260917h';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917h';
+import { renderTrackForm } from './trackForm.js?v=20260917h';
+import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917h';
+import { createTapTempo } from './tapTempo.js?v=20260917h';
 
 // Spotify's actual recommendation/audio-features endpoints are blocked for
 // any developer app created after Nov 2024 (403, permanently, short of
@@ -138,9 +139,26 @@ export function renderLiveTab(container) {
       </div>
       <button type="button" class="secondary" id="ve-lookup">Look up ${track.album || 'album'} on Spotify</button>
       <div id="ve-lookup-results"></div>
+      <label>Tempo (tap along to the beat) <span class="hint">— currently ${track.bpm ?? '?'} BPM</span></label>
+      <div class="tempo-readout" id="ve-bpm-readout">${track.bpm ?? '--'} BPM</div>
+      <div class="row">
+        <button type="button" id="ve-tap">Tap</button>
+        <input type="number" id="ve-bpm-manual" placeholder="or type BPM" value="${track.bpm ?? ''}" />
+      </div>
       <div style="margin-top:0.5rem"><button type="button" id="ve-save">Save</button>
       <button type="button" class="secondary" id="ve-cancel">Cancel</button></div>
     `;
+    let editedBpm = track.bpm ?? null;
+    const veTapTempo = createTapTempo((bpm) => {
+      if (!bpm) return;
+      editedBpm = bpm;
+      mountEl.querySelector('#ve-bpm-readout').textContent = `${bpm} BPM`;
+      mountEl.querySelector('#ve-bpm-manual').value = bpm;
+    });
+    mountEl.querySelector('#ve-tap').addEventListener('click', () => veTapTempo.tap());
+    mountEl.querySelector('#ve-bpm-manual').addEventListener('input', (e) => {
+      editedBpm = e.target.value ? Number(e.target.value) : null;
+    });
     mountEl.querySelector('#ve-lookup').addEventListener('click', async () => {
       const resultsEl = mountEl.querySelector('#ve-lookup-results');
       if (!isLoggedIn()) { resultsEl.innerHTML = '<p class="hint">Log into Spotify in Settings first.</p>'; return; }
@@ -169,7 +187,17 @@ export function renderLiveTab(container) {
     mountEl.querySelector('#ve-save').addEventListener('click', () => {
       const title = mountEl.querySelector('#ve-title').value.trim() || "(DJ's choice)";
       const tn = mountEl.querySelector('#ve-tracknum').value.trim();
-      Store.updateTrack(track.id, { title, trackNumber: tn ? Number(tn) : null });
+      const newBpm = editedBpm ?? track.bpm;
+      const updated = Store.updateTrack(track.id, { title, trackNumber: tn ? Number(tn) : null, bpm: newBpm });
+      // A changed tempo can change where this track belongs in the plan -
+      // pull it out and re-insert at its new best slot rather than leaving
+      // it wherever it happened to land under the old (often default) BPM.
+      if (newBpm !== track.bpm && !track.played) {
+        const withoutThis = Store.getPlanOrder().filter((id) => id !== track.id);
+        const direction = getPlanDirection(Store.getSettings());
+        const reordered = insertVinylTrack(updated, withoutThis, Store.getTracks(), direction);
+        Store.savePlanOrder(reordered);
+      }
       onDone();
     });
     mountEl.querySelector('#ve-cancel').addEventListener('click', onDone);

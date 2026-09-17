@@ -1,14 +1,22 @@
 # State
 
-_Last updated: 2026-09-16_
+_Last updated: 2026-09-17_
 
 ## Current status
 
-MVP built and deployed for a set on 2026-09-17. Live at
+MVP built and deployed for tonight's set (2026-09-17). Live at
 https://dentoneer.github.io/coffee-shop-dj/ (repo: Dentoneer/coffee-shop-dj,
 GitHub Pages serving from `master` root). Core plan/insertion logic
 verified via a Node smoke test (caught and fixed a guest-priority-window
 off-by-one bug). UI render verified via headless Edge screenshot.
+
+`data/collection.json` now has 189 records (full dictated collection +
+Buena Vista Social Club, added later). Claude picked and researched (via
+web search, real tracklists/track numbers) a 13-record set for tonight —
+see the conversation for the full list with sources; the ready-to-import
+JSON was handed to the user to paste into Crate Builder. BPM values
+throughout are genre-feel estimates pending tap-tempo confirmation on the
+actual turntable.
 
 ## Recent decisions
 
@@ -29,16 +37,20 @@ off-by-one bug). UI render verified via headless Edge screenshot.
 
 - [x] Finish implementation (store/spotify/plan/tapTempo/crate/liveset/app).
 - [x] Create the GitHub repo + enable Pages.
-- [x] Full ~188-record personal collection dictated and cataloged in
-      `data/collection.json`, browsable in the new Vinyl Corner tab.
+- [x] Full personal collection dictated and cataloged in
+      `data/collection.json` (189 records), browsable in the Vinyl Corner
+      tab.
+- [x] Claude picked, researched, and delivered tonight's 13-record set
+      (artist/album/track number/track title/BPM/energy/flavor tags) as a
+      ready-to-import JSON, replacing several picks per user feedback.
 - [ ] User registers a free Spotify Developer app to get a Client ID, adds
       `https://dentoneer.github.io/coffee-shop-dj/` as a Redirect URI, and
-      pastes the Client ID into the app's Settings tab.
-- [ ] From `data/collection.json`, Claude picks ~10-15 for tomorrow's vibe
-      + tempo arc, gives a track-per-record + starting BPM/energy, and
-      hands back a JSON file for the Crate Builder's bulk import.
+      pastes the Client ID into the app's Settings tab (unconfirmed as of
+      last update — user was mid-setup).
+- [ ] User pastes the 13-record JSON into Crate Builder's Bulk import and
+      confirms it looks right in Live Set.
 - [ ] User adds/confirms their vinyls via Crate Builder (tap-tempo each to
-      confirm the BPM estimate).
+      replace the estimated BPM with a measured one).
 - [ ] A handful of collection entries are marked `"note"` in the JSON as
       unresolved/uncertain titles (e.g. Bob Dylan "Side Tracks") — fine to
       leave as-is, correct opportunistically if the user brings it up.

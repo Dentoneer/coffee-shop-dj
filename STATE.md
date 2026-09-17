@@ -29,13 +29,18 @@ off-by-one bug). UI render verified via headless Edge screenshot.
 
 - [x] Finish implementation (store/spotify/plan/tapTempo/crate/liveset/app).
 - [x] Create the GitHub repo + enable Pages.
+- [x] Full ~188-record personal collection dictated and cataloged in
+      `data/collection.json`, browsable in the new Vinyl Corner tab.
 - [ ] User registers a free Spotify Developer app to get a Client ID, adds
       `https://dentoneer.github.io/coffee-shop-dj/` as a Redirect URI, and
       pastes the Client ID into the app's Settings tab.
-- [ ] User dictates their vinyl collection; Claude picks ~10-15 for the
-      vibe + tempo arc, gives a track-per-record + starting BPM/energy, and
+- [ ] From `data/collection.json`, Claude picks ~10-15 for tomorrow's vibe
+      + tempo arc, gives a track-per-record + starting BPM/energy, and
       hands back a JSON file for the Crate Builder's bulk import.
 - [ ] User adds/confirms their vinyls via Crate Builder (tap-tempo each to
       confirm the BPM estimate).
+- [ ] A handful of collection entries are marked `"note"` in the JSON as
+      unresolved/uncertain titles (e.g. Bob Dylan "Side Tracks") — fine to
+      leave as-is, correct opportunistically if the user brings it up.
 - [ ] Every future push to `master` auto-deploys to Pages — no separate
       deploy step needed.

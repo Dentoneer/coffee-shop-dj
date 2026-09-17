@@ -2,10 +2,12 @@ import { handleRedirect } from './spotify.js';
 import { renderCrateTab } from './crate.js';
 import { renderLiveTab } from './liveset.js';
 import { renderSettingsTab } from './settings.js';
+import { renderCollectionTab } from './collection.js';
 
 const panels = {
   live: { el: document.getElementById('tab-live'), render: renderLiveTab },
   crate: { el: document.getElementById('tab-crate'), render: renderCrateTab },
+  collection: { el: document.getElementById('tab-collection'), render: renderCollectionTab },
   settings: { el: document.getElementById('tab-settings'), render: renderSettingsTab },
 };
 

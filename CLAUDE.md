@@ -15,7 +15,15 @@ Full design rationale: `docs/superpowers/specs/2026-09-16-coffee-shop-dj-design.
 ## Architecture
 
 - Plain HTML/CSS/JS, no build step, no framework.
-- `index.html` — shell with three tabs: Crate Builder, Live Set, Settings.
+- `index.html` — shell with four tabs: Live Set, Crate Builder, Vinyl
+  Corner, Settings.
+- `data/collection.json` — the full personal vinyl collection (~188
+  records, artist/album only, no tempo/energy tagging), dictated by the
+  user and captured as a one-time catalog build. This is the master
+  library; `js/collection.js` renders it read-only, alphabetized, in the
+  Vinyl Corner tab. It is separate from and does not feed the Crate
+  Builder/Live Set tempo-plan system — only tracks explicitly added there
+  (a subset chosen per set) are tap-tempo'd and inserted into a plan.
 - `js/store.js` — `localStorage`-backed data layer (tracks, settings, auth).
 - `js/spotify.js` — Spotify Authorization Code + PKCE login, token refresh,
   catalog search. No client secret — PKCE needs none.

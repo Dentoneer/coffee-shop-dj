@@ -185,3 +185,44 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .row { display: flex; gap: 0.6rem; align-items: center; }
 .row > * { flex: 1; }
+
+.vinyl-shelf {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.vinyl-letter {
+  margin: 1rem 0 0.2rem;
+  font-weight: bold;
+  color: var(--accent);
+  font-size: 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.vinyl-card {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+}
+
+.vinyl-disc {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-soft) 0 6px, var(--vinyl) 7px 32px, var(--accent-soft) 33px);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+
+.vinyl-info { flex: 1; }
+.vinyl-artist { font-weight: bold; }
+.vinyl-album { color: var(--ink-soft); font-size: 0.9rem; font-style: italic; }

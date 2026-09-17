@@ -74,6 +74,12 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
+- [x] Found the actual root cause of the playlist fetch failing even after
+      a fresh login/scope grant: `getPlaylistTracks` was calling
+      `/playlists/{id}/tracks`, which Spotify deprecated and removed for
+      Development Mode apps in their March 2026 migration - it's
+      `/playlists/{id}/items` now. Confirmed via Spotify's own migration
+      guide (web search), not a guess. Fixed the one call site.
 - [x] Fixed the real reason re-login didn't grant the new playlist scope:
       Spotify silently re-issues a token on whatever scope was already
       approved if the app was ever authorized before, with no visible

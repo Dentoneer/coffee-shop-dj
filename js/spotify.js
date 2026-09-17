@@ -2,7 +2,7 @@
 // that's the point of PKCE for a public static site. Used only for catalog
 // search (track lookup, album art); no playback control, no audio-features.
 
-import { Store } from './store.js?v=20260917q';
+import { Store } from './store.js?v=20260917r';
 
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -204,7 +204,9 @@ export async function getPlaylistTracks(playlistId, limit = 100) {
       offset: String(offset),
       fields: 'items(track(name,artists,album(name,images),track_number,uri,external_urls)),total',
     });
-    const res = await fetch(`${API_BASE}/playlists/${playlistId}/tracks?${params.toString()}`, {
+    // /playlists/{id}/tracks was deprecated and removed for Development
+    // Mode apps in Spotify's March 2026 migration - renamed to /items.
+    const res = await fetch(`${API_BASE}/playlists/${playlistId}/items?${params.toString()}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) throw new Error(`Spotify playlist fetch failed: ${res.status}`);

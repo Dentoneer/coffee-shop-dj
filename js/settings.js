@@ -1,5 +1,5 @@
-import { Store } from './store.js?v=20260917i';
-import { login, logout, isLoggedIn, handleRedirect } from './spotify.js?v=20260917i';
+import { Store } from './store.js?v=20260917j';
+import { login, logout, isLoggedIn, handleRedirect } from './spotify.js?v=20260917j';
 
 export function renderSettingsTab(container) {
   const settings = Store.getSettings();

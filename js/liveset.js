@@ -1,8 +1,8 @@
-import { Store, newId } from './store.js?v=20260917i';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917i';
-import { renderTrackForm } from './trackForm.js?v=20260917i';
-import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917i';
-import { createTapTempo } from './tapTempo.js?v=20260917i';
+import { Store, newId } from './store.js?v=20260917j';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917j';
+import { renderTrackForm } from './trackForm.js?v=20260917j';
+import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917j';
+import { createTapTempo } from './tapTempo.js?v=20260917j';
 
 // Spotify's actual recommendation/audio-features endpoints are blocked for
 // any developer app created after Nov 2024 (403, permanently, short of
@@ -28,10 +28,10 @@ function buildAutoQuery(bridgeTarget) {
 }
 
 // How many upcoming Spotify gaps get a real pre-fetched suggestion in the
-// Full Set list (vs. just "TBD"). Kept small so a mid-set guest addition
-// doesn't fire off a dozen Spotify searches, and because far-future slots
-// are likely to get reshuffled by later guest additions anyway.
-const LOOKAHEAD_GAPS = 3;
+// Full Set list (vs. "TBD"). Fetches are serialized (one at a time), so
+// raising this just takes a bit longer to fill in, not more load at once -
+// covers a full night's worth of tracks rather than only the next couple.
+const LOOKAHEAD_GAPS = 25;
 
 export function renderLiveTab(container) {
   container.innerHTML = `

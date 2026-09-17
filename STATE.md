@@ -74,6 +74,16 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
+- [x] Raised `LOOKAHEAD_GAPS` from 3 to 25 - user confirmed the ones it
+      did attempt worked correctly, just wanted more of the set filled in.
+      Fetches are already serialized (one at a time), so this just takes
+      longer to fully populate, not more simultaneous load.
+- [x] Full visual restyle to a single fixed "cyberpunk colorwave" theme
+      per explicit request: deep violet-black background with a faint
+      grid, neon magenta/cyan palette, gradient app title, glowing
+      borders/buttons, monospace tempo readout. No more light/dark
+      media-query split - this look is now the only theme. All existing
+      class names/structure kept, so no HTML/JS changes needed.
 - [x] Investigated "guest track missing from Full Set" - it wasn't actually
       missing (verified via headless test: correctly tempo-sorted at its
       100 BPM default, between the two records that BPM falls between).

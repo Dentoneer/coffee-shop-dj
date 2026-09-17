@@ -1,8 +1,8 @@
-import { handleRedirect } from './spotify.js?v=20260917i';
-import { renderCrateTab } from './crate.js?v=20260917i';
-import { renderLiveTab } from './liveset.js?v=20260917i';
-import { renderSettingsTab } from './settings.js?v=20260917i';
-import { renderCollectionTab } from './collection.js?v=20260917i';
+import { handleRedirect } from './spotify.js?v=20260917j';
+import { renderCrateTab } from './crate.js?v=20260917j';
+import { renderLiveTab } from './liveset.js?v=20260917j';
+import { renderSettingsTab } from './settings.js?v=20260917j';
+import { renderCollectionTab } from './collection.js?v=20260917j';
 
 const panels = {
   live: { el: document.getElementById('tab-live'), render: renderLiveTab },

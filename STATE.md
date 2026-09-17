@@ -60,6 +60,12 @@ this file only tracks current status and what's still open.
 - [ ] Not yet tested with a real, logged-in Spotify session end-to-end by
       Claude (no way to drive OAuth headlessly) — the user is the first
       real-world test of login, search, and the planned-pick flow.
+- [x] Added a "Build tonight's crate" one-click button to Crate Builder:
+      fetches `data/tonight-crate.json` (the 13-track curated/researched
+      set) and imports it directly, no copy-pasting JSON. Bulk-import
+      textarea kept as an "(advanced)" fallback for any future list
+      Claude hands over mid-night. Verified end-to-end with a headless
+      click simulation - correctly inserts all 13 into a tempo-sorted plan.
 - [x] Reverted the vinyl add-form's Spotify lookup from the two-step
       album-search-then-tracklist flow back to a direct one-step track
       search (`searchTracks` already returns album + track number per

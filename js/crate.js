@@ -5,9 +5,17 @@ import { renderTrackForm } from './trackForm.js';
 export function renderCrateTab(container) {
   container.innerHTML = `
     <div id="crate-form"></div>
+    <div class="card">
+      <h3>Build tonight's crate</h3>
+      <p class="hint">One click, no copy-pasting: loads the set Claude curated and researched from your
+        collection straight into the plan. Every track stays fully editable afterward — change the song,
+        BPM, or energy on any row in Crate Builder or Live Set.</p>
+      <button type="button" id="build-crate-btn">Build tonight's crate</button>
+      <p class="hint" id="build-crate-status"></p>
+    </div>
     <div id="crate-bulk" class="card">
-      <h3>Bulk import</h3>
-      <p class="hint">Paste a JSON crate (e.g. one Claude generated for you after you dictated your collection).</p>
+      <h3>Bulk import (advanced)</h3>
+      <p class="hint">Paste a JSON crate manually — useful if Claude hands you a different list later in the night.</p>
       <textarea id="bulk-json" rows="4" style="width:100%;font-family:monospace;"></textarea>
       <div style="margin-top:0.5rem">
         <button type="button" id="bulk-import-btn">Import</button>
@@ -50,6 +58,38 @@ export function renderCrateTab(container) {
     });
   }
 
+  function importTrackArray(incoming) {
+    if (!Array.isArray(incoming)) throw new Error('Expected a JSON array of tracks, or {tracks: [...]}.');
+    let order = Store.getPlanOrder();
+    const existing = Store.getTracks();
+    incoming.forEach((raw) => {
+      const track = {
+        id: raw.id || crypto.randomUUID(),
+        title: raw.title,
+        artist: raw.artist,
+        album: raw.album || null,
+        trackNumber: raw.trackNumber ?? null,
+        source: raw.source || 'vinyl',
+        bpm: raw.bpm ?? null,
+        energy: raw.energy ?? 3,
+        flavorTags: raw.flavorTags || [],
+        guestRequested: !!raw.guestRequested,
+        played: false,
+        playedAt: null,
+        addedAt: Date.now(),
+        spotifyArt: raw.spotifyArt || null,
+        spotifyUri: raw.spotifyUri || null,
+      };
+      Store.addTrack(track);
+      existing.push(track);
+      if (track.source === 'vinyl') {
+        order = insertVinylTrack(track, order, existing);
+      }
+    });
+    Store.savePlanOrder(order);
+    return incoming.length;
+  }
+
   renderTrackForm(container.querySelector('#crate-form'), {
     source: 'vinyl',
     guestRequested: false,
@@ -61,41 +101,28 @@ export function renderCrateTab(container) {
     },
   });
 
+  container.querySelector('#build-crate-btn').addEventListener('click', async () => {
+    const statusEl = container.querySelector('#build-crate-status');
+    statusEl.textContent = 'Loading…';
+    try {
+      const res = await fetch('data/tonight-crate.json');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const incoming = await res.json();
+      const count = importTrackArray(incoming);
+      statusEl.textContent = `Added ${count} track(s) to your plan.`;
+      refreshList();
+    } catch (e) {
+      statusEl.textContent = `Couldn't load tonight's crate: ${e.message}`;
+    }
+  });
+
   container.querySelector('#bulk-import-btn').addEventListener('click', () => {
     const statusEl = container.querySelector('#bulk-status');
     try {
       const parsed = JSON.parse(container.querySelector('#bulk-json').value);
       const incoming = Array.isArray(parsed) ? parsed : parsed.tracks;
-      if (!Array.isArray(incoming)) throw new Error('Expected a JSON array of tracks, or {tracks: [...]}.');
-
-      let order = Store.getPlanOrder();
-      const existing = Store.getTracks();
-      incoming.forEach((raw) => {
-        const track = {
-          id: raw.id || crypto.randomUUID(),
-          title: raw.title,
-          artist: raw.artist,
-          album: raw.album || null,
-          trackNumber: raw.trackNumber ?? null,
-          source: raw.source || 'vinyl',
-          bpm: raw.bpm ?? null,
-          energy: raw.energy ?? 3,
-          flavorTags: raw.flavorTags || [],
-          guestRequested: !!raw.guestRequested,
-          played: false,
-          playedAt: null,
-          addedAt: Date.now(),
-          spotifyArt: raw.spotifyArt || null,
-          spotifyUri: raw.spotifyUri || null,
-        };
-        Store.addTrack(track);
-        existing.push(track);
-        if (track.source === 'vinyl') {
-          order = insertVinylTrack(track, order, existing);
-        }
-      });
-      Store.savePlanOrder(order);
-      statusEl.textContent = `Imported ${incoming.length} track(s).`;
+      const count = importTrackArray(incoming);
+      statusEl.textContent = `Imported ${count} track(s).`;
       container.querySelector('#bulk-json').value = '';
       refreshList();
     } catch (e) {

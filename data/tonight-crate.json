@@ -1,0 +1,15 @@
+[
+  {"artist":"Ahmad Jamal","album":"At the Penthouse","trackNumber":5,"title":"Ahmad's Blues","bpm":70,"energy":1.5,"flavorTags":["Jazz/Soul","Instrumental"]},
+  {"artist":"Interpol","album":"Turn on the Bright Lights","trackNumber":3,"title":"NYC","bpm":95,"energy":2.5,"flavorTags":["Lo-fi/Chill","Vocal"]},
+  {"artist":"João Gilberto","album":"Amoroso","trackNumber":1,"title":"'S Wonderful","bpm":95,"energy":2,"flavorTags":["Latin/Bossa/Cumbia","Vocal"]},
+  {"artist":"Buena Vista Social Club","album":"Buena Vista Social Club","trackNumber":1,"title":"Chan Chan","bpm":90,"energy":2.5,"flavorTags":["Latin/Bossa/Cumbia","World","Vocal"]},
+  {"artist":"Mecano","album":"Entre el Cielo y el Suelo","trackNumber":6,"title":"Hijo de la Luna","bpm":100,"energy":2.5,"flavorTags":["Latin/Bossa/Cumbia","World","Vocal"]},
+  {"artist":"Bob Dylan","album":"Blonde on Blonde","trackNumber":8,"title":"Just Like a Woman","bpm":88,"energy":2,"flavorTags":["Indie/Folk","Vocal"]},
+  {"artist":"Iron & Wine","album":"Our Endless Numbered Days","trackNumber":2,"title":"Naked As We Came","bpm":85,"energy":2,"flavorTags":["Indie/Folk","Lo-fi/Chill","Vocal"]},
+  {"artist":"Beck","album":"Sea Change","trackNumber":5,"title":"Lost Cause","bpm":90,"energy":2.5,"flavorTags":["Indie/Folk","Lo-fi/Chill","Vocal"]},
+  {"artist":"Neutral Milk Hotel","album":"In the Aeroplane Over the Sea","trackNumber":3,"title":"In the Aeroplane Over the Sea","bpm":130,"energy":3,"flavorTags":["Indie/Folk","Vocal"]},
+  {"artist":"Sandro","album":"La Historia de un Ídolo","trackNumber":9,"title":"Porque Yo Te Amo","bpm":85,"energy":2.5,"flavorTags":["Latin/Bossa/Cumbia","World","Vocal"]},
+  {"artist":"Tim Maia","album":"Nobody Can Live Forever","trackNumber":1,"title":"Que Beleza","bpm":118,"energy":3.5,"flavorTags":["Funk/Groove","World","Vocal"]},
+  {"artist":"Pescado Rabioso","album":"Artaud","trackNumber":2,"title":"Cementerio Club","bpm":120,"energy":3.5,"flavorTags":["World","Vocal"]},
+  {"artist":"Los Fabulosos Cadillacs","album":"El León","trackNumber":1,"title":"Carnaval Toda La Vida","bpm":145,"energy":4.5,"flavorTags":["Latin/Bossa/Cumbia","Funk/Groove","World","Vocal"]}
+]

@@ -74,6 +74,17 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
+- [x] Raw sample proved the request returns real items (200, non-empty
+      `items` array), so the bug was purely in parsing. The response
+      shape hints the track fields may now sit flat on the item rather
+      than nested under `track`, and `uri` may be absent entirely in the
+      trimmed Dev Mode response - the old guard required `uri` and so
+      silently dropped every row. Parser now needs only a title, tolerates
+      both shapes, and keeps tracks with no uri. Covered by a Node test
+      (`scratchpad/playlist-parse-test.mjs`) that stubs fetch and asserts
+      both the nested and flattened shapes parse correctly. The raw-sample
+      diagnostic also now prints the item's key structure instead of a
+      truncated envelope, so any remaining mismatch is legible at a glance.
 - [x] Playlist fetch was succeeding (200 OK) but parsing 0 tracks - the
       `fields` filter expression likely named a path Spotify's March 2026
       migration also trimmed from response objects, which returns empty

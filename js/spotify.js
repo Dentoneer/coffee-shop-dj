@@ -2,7 +2,7 @@
 // that's the point of PKCE for a public static site. Used only for catalog
 // search (track lookup, album art); no playback control, no audio-features.
 
-import { Store } from './store.js?v=20260917s';
+import { Store } from './store.js?v=20260917t';
 
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -219,14 +219,18 @@ export async function getPlaylistTracks(playlistId, limit = 100) {
     if (offset === 0) console.debug('Spotify playlist items sample:', items[0]);
     items.forEach((item) => {
       const t = item.track || item; // tolerate either {track: {...}} or a flat item shape
-      if (!t || !t.uri) return;
+      // Only a title is truly required - uri may simply be absent from
+      // Spotify's trimmed Dev Mode response, and a track we can name is
+      // still perfectly usable (it just can't be deduped by uri).
+      const title = t?.name || t?.title;
+      if (!title) return;
       out.push({
-        title: t.name,
-        artist: (t.artists || []).map((a) => a.name).join(', '),
+        title,
+        artist: (t.artists || []).map((a) => a?.name).filter(Boolean).join(', '),
         album: t.album?.name,
         trackNumber: t.track_number ?? null,
         albumArt: t.album?.images?.[2]?.url || t.album?.images?.[0]?.url || null,
-        uri: t.uri,
+        uri: t.uri || null,
         externalUrl: t.external_urls?.spotify,
       });
     });
@@ -244,7 +248,24 @@ export async function getPlaylistRawSample(playlistId) {
     headers: { Authorization: `Bearer ${token}` },
   });
   const text = await res.text();
-  return { status: res.status, body: text.slice(0, 500) };
+  if (!res.ok) return { status: res.status, body: text.slice(0, 500) };
+  try {
+    const data = JSON.parse(text);
+    const item = data.items?.[0];
+    // Pretty-print just the one item's keys (top level and, if present,
+    // one level into "track") instead of the whole raw envelope - the
+    // wrapper's href/added_by boilerplate was eating the truncation
+    // budget before showing the field that actually matters.
+    const summary = item ? {
+      itemTopLevelKeys: Object.keys(item),
+      hasTrackKey: 'track' in item,
+      trackKeys: item.track ? Object.keys(item.track) : null,
+      item: item,
+    } : { note: 'items array is empty', totalReported: data.total };
+    return { status: res.status, body: JSON.stringify(summary, null, 1).slice(0, 2500) };
+  } catch (e) {
+    return { status: res.status, body: `(failed to parse as JSON) ${text.slice(0, 500)}` };
+  }
 }
 
 export function logout() {

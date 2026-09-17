@@ -47,3 +47,11 @@ Full design rationale: `docs/superpowers/specs/2026-09-16-coffee-shop-dj-design.
 - Redirect URI for Spotify OAuth must exactly match what's registered in
   the Spotify Developer Dashboard (the GitHub Pages URL, and
   `http://127.0.0.1:<port>/` for local testing).
+- **Cache-busting**: every internal `import ... from './x.js'` and the
+  `<script src="js/app.js">` in `index.html` carries a shared `?v=<tag>`
+  query string (GitHub Pages caches assets for 10 minutes, and this was
+  repeatedly mistaken for real bugs during live iteration). **After any
+  future push, bump the tag** with:
+  `sed -i -E "s/(\.js)\?v=[a-zA-Z0-9]+/\1?v=NEWTAG/g" js/*.js index.html`
+  then tell the user to hard-refresh anyway — busting only guarantees a
+  fresh fetch, not that their tab has already re-requested the page.

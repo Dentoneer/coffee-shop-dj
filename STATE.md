@@ -52,11 +52,14 @@ this file only tracks current status and what's still open.
 - [ ] A few `data/collection.json` entries carry a `"note"` field flagging
       an unresolved/uncertain dictated title (e.g. Bob Dylan "Side
       Tracks") — fine to leave, fix opportunistically.
-- [ ] If "the page looks stale/missing a feature" comes up again: it's
-      very likely browser cache, not a real bug — confirm via `curl` on
-      the deployed JS before assuming otherwise. No cache-busting
-      infrastructure has been added; a hard refresh is the fix. Revisit
-      if this keeps recurring.
+- [x] Added real cache-busting after this bit the user four separate times
+      tonight: every internal import and the `index.html` entry script now
+      carry a shared `?v=<tag>` query string (see CLAUDE.md for the sed
+      one-liner to bump it on every future push). Verified locally that
+      the app still loads correctly with versioned import specifiers.
+      Still tell the user to hard-refresh after each push regardless -
+      busting guarantees a fresh network fetch, not that their already-open
+      tab has re-requested anything.
 - [ ] Not yet tested with a real, logged-in Spotify session end-to-end by
       Claude (no way to drive OAuth headlessly) — the user is the first
       real-world test of login, search, and the planned-pick flow.

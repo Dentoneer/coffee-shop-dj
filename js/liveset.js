@@ -1,7 +1,7 @@
-import { Store, newId } from './store.js';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget } from './plan.js';
-import { renderTrackForm } from './trackForm.js';
-import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js';
+import { Store, newId } from './store.js?v=20260917d';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget } from './plan.js?v=20260917d';
+import { renderTrackForm } from './trackForm.js?v=20260917d';
+import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917d';
 
 // Spotify's actual recommendation/audio-features endpoints are blocked for
 // any developer app created after Nov 2024 (403, permanently, short of

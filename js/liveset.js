@@ -1,8 +1,8 @@
-import { Store, newId } from './store.js?v=20260917m';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917m';
-import { renderTrackForm } from './trackForm.js?v=20260917m';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20260917m';
-import { createTapTempo } from './tapTempo.js?v=20260917m';
+import { Store, newId } from './store.js?v=20260917n';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917n';
+import { renderTrackForm } from './trackForm.js?v=20260917n';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20260917n';
+import { createTapTempo } from './tapTempo.js?v=20260917n';
 
 // Spotify's actual recommendation/audio-features endpoints are blocked for
 // any developer app created after Nov 2024 (403, permanently, short of
@@ -457,6 +457,73 @@ export function renderLiveTab(container) {
       return row;
     }
 
+    // --- Drag-to-reorder for upcoming vinyl rows (pointer events, so it
+    // works on touch as well as mouse). Only the not-yet-played vinyl
+    // rows are draggable - reordering history or Spotify placeholders
+    // doesn't mean anything.
+    let dragId = null;
+    let dragRow = null;
+
+    function vinylRowEls() {
+      return Array.from(listEl.querySelectorAll('.track-row[data-vinyl-id]'));
+    }
+
+    function rowUnder(clientY) {
+      return vinylRowEls().find((r) => {
+        const rect = r.getBoundingClientRect();
+        return clientY >= rect.top && clientY <= rect.bottom;
+      });
+    }
+
+    function reorderVinyl(draggedId, targetId) {
+      if (draggedId === targetId) return;
+      const planOrder = Store.getPlanOrder();
+      const fromIdx = planOrder.indexOf(draggedId);
+      if (fromIdx === -1) return;
+      const newOrder = planOrder.slice();
+      newOrder.splice(fromIdx, 1);
+      const toIdx = newOrder.indexOf(targetId);
+      if (toIdx === -1) return;
+      newOrder.splice(toIdx, 0, draggedId);
+      Store.savePlanOrder(newOrder);
+      refreshTurn();
+    }
+
+    function onDragMove(e) {
+      if (!dragId) return;
+      vinylRowEls().forEach((r) => r.classList.remove('drag-over'));
+      const target = rowUnder(e.clientY);
+      if (target && target.dataset.vinylId !== dragId) target.classList.add('drag-over');
+    }
+
+    function onDragEnd(e) {
+      if (!dragId) return;
+      const target = rowUnder(e.clientY);
+      if (dragRow) dragRow.style.opacity = '';
+      vinylRowEls().forEach((r) => r.classList.remove('drag-over'));
+      window.removeEventListener('pointermove', onDragMove);
+      window.removeEventListener('pointerup', onDragEnd);
+      const draggedId = dragId;
+      dragId = null;
+      dragRow = null;
+      if (target && target.dataset.vinylId !== draggedId) reorderVinyl(draggedId, target.dataset.vinylId);
+    }
+
+    function makeDragHandle(id, row) {
+      const handle = document.createElement('span');
+      handle.textContent = '⠿'; // ⠿
+      handle.className = 'drag-handle';
+      handle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        dragId = id;
+        dragRow = row;
+        row.style.opacity = '0.4';
+        window.addEventListener('pointermove', onDragMove);
+        window.addEventListener('pointerup', onDragEnd);
+      });
+      return handle;
+    }
+
     played.forEach((t) => {
       const row = makeRow();
       row.style.opacity = '0.6';
@@ -475,6 +542,7 @@ export function renderLiveTab(container) {
       if (entry.kind === 'vinyl') {
         const t = entry.track;
         const row = makeRow();
+        row.dataset.vinylId = t.id;
         if (entry.upNow) row.style.background = 'var(--accent-soft)';
         row.innerHTML = `
           <span class="badge vinyl">VINYL</span>
@@ -484,6 +552,7 @@ export function renderLiveTab(container) {
             <div class="sub">${trackLine(t)} &middot; ${bpmLabel(t)}</div>
           </div>
         `;
+        row.prepend(makeDragHandle(t.id, row));
         const changeBtn = document.createElement('button');
         changeBtn.type = 'button';
         changeBtn.className = 'secondary';

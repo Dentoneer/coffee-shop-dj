@@ -74,6 +74,15 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
+- [x] Added drag-to-reorder for upcoming vinyl rows in Full Set. Uses
+      Pointer Events (not native HTML5 drag-and-drop) so it works on
+      touch as well as mouse - a `.drag-handle` per row, drop target
+      resolved by comparing pointer Y against each row's bounding rect,
+      reorder committed to `Store.planOrder` on release (dropping = insert
+      before the target row), full re-render via refreshTurn(). Verified
+      end-to-end with simulated PointerEvents: dragging the last row onto
+      the first correctly reordered the underlying plan data and every
+      dependent view (Next up, Full Set) picked it up immediately.
 - [x] Fixed a real bug: the vinyl "Change" editor's Spotify lookup was
       hardcoded to `track.artist`/`track.album` from the original closure,
       completely ignoring anything typed into the form - so it could only

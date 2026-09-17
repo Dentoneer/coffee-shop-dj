@@ -198,6 +198,22 @@ button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
 .track-meta .title { font-weight: bold; }
 .track-meta .sub { color: var(--ink-soft); font-size: 0.85rem; }
 
+.drag-handle {
+  flex: none;
+  cursor: grab;
+  touch-action: none;
+  color: var(--ink-soft);
+  font-size: 1.1rem;
+  padding: 0 0.2rem;
+  user-select: none;
+}
+.drag-handle:active { cursor: grabbing; color: var(--accent2); }
+
+.track-row.drag-over {
+  outline: 2px dashed var(--accent2);
+  outline-offset: -2px;
+}
+
 .tempo-readout {
   font-size: 2.2rem;
   font-weight: bold;

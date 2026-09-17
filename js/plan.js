@@ -2,7 +2,7 @@
 // bridge target. Pure functions over Track[]/planOrder so they're easy to
 // reason about and test from the console.
 
-import { Store } from './store.js?v=20260917m';
+import { Store } from './store.js?v=20260917n';
 
 const GUEST_PRIORITY_WINDOW = 3; // last-played slot + next 2 unplayed
 

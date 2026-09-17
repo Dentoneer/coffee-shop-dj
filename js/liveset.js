@@ -48,6 +48,12 @@ export function renderLiveTab(container) {
     </div>
 
     <div class="card">
+      <h3>Guest crate</h3>
+      <p class="hint">Every vinyl a guest has handed you tonight, in one place.</p>
+      <div id="guest-crate-list"></div>
+    </div>
+
+    <div class="card">
       <h3>Full set</h3>
       <p class="hint">Played so far, then the upcoming plan (Spotify bridge slots show "TBD" until you pick one).</p>
       <div id="full-list"></div>
@@ -89,6 +95,32 @@ export function renderLiveTab(container) {
     if (t.album) bits.push(t.album);
     if (t.trackNumber != null) bits.push(`#${t.trackNumber}`);
     return bits.length ? `${t.title} &middot; ${bits.join(' ')}` : t.title;
+  }
+
+  function renderGuestCrate() {
+    const listEl = container.querySelector('#guest-crate-list');
+    const guests = Store.getTracks()
+      .filter((t) => t.guestRequested)
+      .sort((a, b) => a.addedAt - b.addedAt);
+
+    if (guests.length === 0) {
+      listEl.innerHTML = '<p class="hint">No guest vinyls yet — click "+ Add guest vinyl" above when someone hands you one.</p>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    guests.forEach((t) => {
+      const row = document.createElement('div');
+      row.className = 'track-row';
+      row.innerHTML = `
+        <div class="vinyl-disc">&#9835;</div>
+        <div class="track-meta">
+          <div class="title">${t.artist} ${t.played ? '&#9989; played' : ''}</div>
+          <div class="sub">${trackLine(t)} &middot; ${t.bpm ?? '?'} BPM &middot; energy ${t.energy}</div>
+        </div>
+      `;
+      listEl.appendChild(row);
+    });
   }
 
   function renderVinylTurn(turnCard, snap) {
@@ -275,6 +307,7 @@ export function renderLiveTab(container) {
     const turnCard = container.querySelector('#turn-card');
     if (snap.turn === 'vinyl') renderVinylTurn(turnCard, snap);
     else renderSpotifyTurn(turnCard, snap);
+    renderGuestCrate();
     renderFullList(snap);
   }
 

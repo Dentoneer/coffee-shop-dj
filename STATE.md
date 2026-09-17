@@ -81,3 +81,11 @@ actual turntable.
       Regression test added and passing (ascending + descending add order).
 - [x] Reworked tonight's 13-track import JSON to the new album/trackNumber
       schema and handed it to the user again.
+- [x] Added a "Guest crate" card to Live Set — every guest-requested track
+      in one place (artist/album/track#/song/BPM/energy/played status),
+      separate from the full mixed timeline.
+- Root-caused a user report of "no Full set, no Spotify auto-search" to
+  browser cache serving a pre-update copy of the JS (confirmed via curl
+  that the deployed files were already current) — not a real bug. No
+  cache-busting infra added; the fix is a hard refresh. Worth revisiting
+  if this keeps recurring during further live-set iteration tonight.

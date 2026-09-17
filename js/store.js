@@ -8,6 +8,7 @@ const KEYS = {
   spotifyAuth: 'csdj.spotifyAuth',
   spotifyPkce: 'csdj.spotifyPkceVerifier',
   liveState: 'csdj.liveState',
+  plannedSpotify: 'csdj.plannedSpotify',
 };
 
 const DEFAULT_SETTINGS = {
@@ -115,6 +116,28 @@ export const Store = {
     localStorage.removeItem(KEYS.tracks);
     localStorage.removeItem(KEYS.planOrder);
     localStorage.removeItem(KEYS.liveState);
+    localStorage.removeItem(KEYS.plannedSpotify);
+  },
+
+  // Planned (not-yet-played) Spotify picks for upcoming bridge slots,
+  // keyed by the id of the vinyl track that precedes that slot - each
+  // vinyl has exactly one Spotify slot after it under strict alternation.
+  // Lets the DJ preview and change a future Spotify pick before it's live.
+  getPlannedSpotifyMap() {
+    return readJSON(KEYS.plannedSpotify, {});
+  },
+  getPlannedSpotifyFor(afterVinylId) {
+    return Store.getPlannedSpotifyMap()[afterVinylId] || null;
+  },
+  setPlannedSpotifyFor(afterVinylId, pick) {
+    const map = Store.getPlannedSpotifyMap();
+    map[afterVinylId] = pick;
+    writeJSON(KEYS.plannedSpotify, map);
+  },
+  clearPlannedSpotifyFor(afterVinylId) {
+    const map = Store.getPlannedSpotifyMap();
+    delete map[afterVinylId];
+    writeJSON(KEYS.plannedSpotify, map);
   },
 
   exportAll() {
@@ -123,6 +146,7 @@ export const Store = {
       planOrder: Store.getPlanOrder(),
       settings: Store.getSettings(),
       liveState: Store.getLiveState(),
+      plannedSpotify: Store.getPlannedSpotifyMap(),
       exportedAt: new Date().toISOString(),
     };
   },
@@ -131,6 +155,7 @@ export const Store = {
     if (data.planOrder) Store.savePlanOrder(data.planOrder);
     if (data.settings) Store.saveSettings(data.settings);
     if (data.liveState) Store.saveLiveState(data.liveState);
+    if (data.plannedSpotify) writeJSON(KEYS.plannedSpotify, data.plannedSpotify);
   },
 };
 

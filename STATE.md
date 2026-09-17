@@ -1,95 +1,62 @@
 # State
 
-_Last updated: 2026-09-17 (later same day)_
+_Last updated: 2026-09-17_
 
 ## Current status
 
-MVP built and deployed for tonight's set (2026-09-17). Live at
-https://dentoneer.github.io/coffee-shop-dj/ (repo: Dentoneer/coffee-shop-dj,
-GitHub Pages serving from `master` root). Core plan/insertion logic
-verified via a Node smoke test (caught and fixed a guest-priority-window
-off-by-one bug). UI render verified via headless Edge screenshot.
+Live and in active use for tonight's set. **https://dentoneer.github.io/coffee-shop-dj/**
+(repo `Dentoneer/coffee-shop-dj`, GitHub Pages from `master` root, auto-deploys on push).
 
-`data/collection.json` now has 189 records (full dictated collection +
-Buena Vista Social Club, added later). Claude picked and researched (via
-web search, real tracklists/track numbers) a 13-record set for tonight —
-see the conversation for the full list with sources; the ready-to-import
-JSON was handed to the user to paste into Crate Builder. BPM values
-throughout are genre-feel estimates pending tap-tempo confirmation on the
-actual turntable.
+Core pieces all working: tempo-ordered vinyl plan (Crate Builder), Spotify
+PKCE login + search, Live Set's turn-based flow, a full personal vinyl
+collection (`data/collection.json`, 189 records) browsable in Vinyl Corner,
+and tonight's curated 13-record starting set (handed to the user as a
+Crate Builder bulk-import JSON, with real researched track numbers/titles
+and web-search sources — see git log / conversation for that list).
+
+Detailed history of what was built and fixed each round is in git log —
+this file only tracks current status and what's still open.
 
 ## Recent decisions
 
 - Hosting: GitHub Pages static site, not a Claude Artifact (Artifacts block
   external fetch, so they can't reach the Spotify API).
-- Spotify: Authorization Code + PKCE, client-side only, DJ's own Client ID.
-  No pre-seeded playlists — Spotify picks are live search + pick-by-ear
-  against a displayed bridge target (no ranking, since live search results
-  carry no tempo data).
-- Tempo capture: tap-tempo widget, not Spotify's `audio-features` endpoint
-  (gated for new dev apps as of late 2024).
-- Alternation is strict: vinyl → Spotify → vinyl → Spotify, no exceptions
-  (explicitly confirmed — earlier "contiguous vinyl tracks" idea dropped).
-- Guest-brought vinyls get priority placement (next 3 unplayed slots only)
-  rather than competing for the tempo-optimal slot across the whole plan.
+- Spotify: Authorization Code + PKCE, client-side only, DJ's own Client ID
+  (Premium account, confirmed — required by Spotify's Feb 2026 Developer
+  Mode rules). No pre-seeded playlists.
+- Spotify's `/recommendations` and `audio-features` endpoints are
+  permanently blocked for any app created after Nov 2024 (ours included) —
+  there is no reachable "real" Spotify ML recommendation. The Spotify
+  bridge turn instead auto-builds and auto-runs a search from the bridge
+  target's flavor tags, auto-picks the top result, and says so explicitly
+  in the UI. Tempo is captured via tap-tempo, not `audio-features`.
+- Alternation is strict: vinyl → Spotify → vinyl → Spotify, no exceptions.
+- Guest-brought vinyls get priority placement (next 3 unplayed slots only).
+- Every track (vinyl or Spotify) has explicit `album`/`trackNumber` fields
+  now, not baked into `title`.
+- Upcoming Spotify bridge slots are pre-fetched and cached ("planned")
+  for the next few gaps (`LOOKAHEAD_GAPS = 3` in `js/liveset.js`) so the
+  Full Set list shows real suggested songs instead of "TBD" — capped to
+  avoid firing a search per gap on every render, and because far-future
+  slots are likely to get reshuffled by later guest additions anyway.
+  Every row (vinyl or Spotify, current or future) has a "Change" control.
+- "Reset" in Settings (`Store.resetSetData()`) only clears
+  tracks/plan/live-progress — never the Spotify Client ID or login.
 
 ## Open threads / next steps
 
-- [x] Finish implementation (store/spotify/plan/tapTempo/crate/liveset/app).
-- [x] Create the GitHub repo + enable Pages.
-- [x] Full personal collection dictated and cataloged in
-      `data/collection.json` (189 records), browsable in the Vinyl Corner
-      tab.
-- [x] Claude picked, researched, and delivered tonight's 13-record set
-      (artist/album/track number/track title/BPM/energy/flavor tags) as a
-      ready-to-import JSON, replacing several picks per user feedback.
-- [ ] User registers a free Spotify Developer app to get a Client ID, adds
-      `https://dentoneer.github.io/coffee-shop-dj/` as a Redirect URI, and
-      pastes the Client ID into the app's Settings tab (unconfirmed as of
-      last update — user was mid-setup).
-- [ ] User pastes the 13-record JSON into Crate Builder's Bulk import and
-      confirms it looks right in Live Set.
-- [ ] User adds/confirms their vinyls via Crate Builder (tap-tempo each to
-      replace the estimated BPM with a measured one).
-- [ ] A handful of collection entries are marked `"note"` in the JSON as
-      unresolved/uncertain titles (e.g. Bob Dylan "Side Tracks") — fine to
-      leave as-is, correct opportunistically if the user brings it up.
-- [ ] Every future push to `master` auto-deploys to Pages — no separate
-      deploy step needed.
-- [x] Superseded the song/vinyl toggle with proper separate `album` and
-      `trackNumber` fields on Track (was overloading `title`). The
-      Spotify-lookup flow for vinyl now searches albums, loads the real
-      tracklist (`spotify.js`'s `getAlbumTracks`), and lets the DJ click
-      the actual track — far more accurate than the old first-track guess.
-- [x] Confirmed: Spotify's `/recommendations` endpoint 403s permanently for
-      any app created after Nov 27 2024 (ours included) - no real "Spotify
-      algorithm" is reachable short of 250k+ MAU extended access. Live Set's
-      Spotify turn now auto-builds a search query from the bridge target's
-      flavor tags and auto-runs it (no typing required), with an explicit
-      note in the UI explaining why it's not true ML recommendations.
-      Confirmed with the user: their Spotify account has Premium, satisfying
-      the Feb 2026 Developer Mode requirement.
-- [x] Added a "Full set" list to Live Set showing played history + the
-      upcoming vinyl plan with Spotify bridge slots marked "TBD — chosen
-      live" (the very next one gets a highlight + note to see the bridge
-      target above). Every row shows artist/album/track#/song.
-- [x] Fixed a real ordering bug in `js/plan.js` `insertVinylTrack`: ties in
-      insertion cost at an unanchored boundary (e.g. the very first insert
-      into an empty plan) resolved to "first candidate wins," which could
-      put a *higher*-BPM track before a lower one. Added a tie-break that
-      prefers whichever side keeps neighbors in ascending BPM order.
-      Regression test added and passing (ascending + descending add order).
-- [x] Reworked tonight's 13-track import JSON to the new album/trackNumber
-      schema and handed it to the user again.
-- [x] Added a "Guest crate" card to Live Set — every guest-requested track
-      in one place (artist/album/track#/song/BPM/energy/played status),
-      separate from the full mixed timeline.
-- [x] Fixed "Reset" wiping the Spotify Client ID and login: it was calling
-      `localStorage.clear()` (everything). New `Store.resetSetData()`
-      clears only tracks/planOrder/liveState; Settings button relabeled
-      "Reset crate/set" and its confirm text says what it keeps.
-- Root-caused a user report of "no Full set, no Spotify auto-search" to
-  browser cache serving a pre-update copy of the JS (confirmed via curl
-  that the deployed files were already current) — not a real bug. No
-  cache-busting infra added; the fix is a hard refresh. Worth revisiting
-  if this keeps recurring during further live-set iteration tonight.
+- [ ] User to paste tonight's 13-record JSON into Crate Builder if not
+      already done, and confirm Live Set reflects it.
+- [ ] User adds/confirms their own vinyls via Crate Builder, tap-tempo
+      confirming each estimated BPM for real.
+- [ ] A few `data/collection.json` entries carry a `"note"` field flagging
+      an unresolved/uncertain dictated title (e.g. Bob Dylan "Side
+      Tracks") — fine to leave, fix opportunistically.
+- [ ] If "the page looks stale/missing a feature" comes up again: it's
+      very likely browser cache, not a real bug — confirm via `curl` on
+      the deployed JS before assuming otherwise. No cache-busting
+      infrastructure has been added; a hard refresh is the fix. Revisit
+      if this keeps recurring.
+- [ ] Not yet tested with a real, logged-in Spotify session end-to-end by
+      Claude (no way to drive OAuth headlessly) — the user is the first
+      real-world test of login, search, and the planned-pick flow.

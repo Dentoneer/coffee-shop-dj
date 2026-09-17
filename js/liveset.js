@@ -1,7 +1,7 @@
-import { Store, newId } from './store.js?v=20260917d';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget } from './plan.js?v=20260917d';
-import { renderTrackForm } from './trackForm.js?v=20260917d';
-import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917d';
+import { Store, newId } from './store.js?v=20260917e';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917e';
+import { renderTrackForm } from './trackForm.js?v=20260917e';
+import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917e';
 
 // Spotify's actual recommendation/audio-features endpoints are blocked for
 // any developer app created after Nov 2024 (403, permanently, short of
@@ -416,11 +416,12 @@ export function renderLiveTab(container) {
       if (entry.upNow) row.style.background = 'var(--accent-soft)';
       const planned = entry.afterVinylId ? Store.getPlannedSpotifyFor(entry.afterVinylId) : null;
 
-      function fillRow(pick) {
+      function fillRow(pick, { loading = false } = {}) {
+        const placeholder = loading ? 'TBD — finding a match…' : 'TBD — no auto-match, tap Change to search';
         row.innerHTML = `
           <span class="badge spotify">SPOTIFY</span>
           <div class="track-meta">
-            <div class="title">${pick ? pick.title : 'TBD — finding a match…'}</div>
+            <div class="title">${pick ? pick.title : placeholder}</div>
             <div class="sub">${pick ? `${pick.artist}${pick.album ? ` &middot; ${pick.album}` : ''}` : ''}${entry.upNow ? ' (bridging next, see above)' : ''}</div>
           </div>
         `;
@@ -483,14 +484,18 @@ export function renderLiveTab(container) {
       if (planned) {
         fillRow(planned);
       } else {
-        fillRow(null); // always shows a Change button, even pre-login
-        if (gapIndex < LOOKAHEAD_GAPS && isLoggedIn() && entry.afterVinylId) {
+        const willAutoFetch = gapIndex < LOOKAHEAD_GAPS && isLoggedIn() && entry.afterVinylId;
+        fillRow(null, { loading: willAutoFetch }); // always shows a Change button, even pre-login
+        if (willAutoFetch) {
           const bt2 = getBridgeTarget(entry.leftVinyl, entry.rightVinyl, Store.getSettings());
           searchTracks(buildAutoQuery(bt2), 1).then((results) => {
             const pick = results[0] || null;
             if (pick) Store.setPlannedSpotifyFor(entry.afterVinylId, pick);
             fillRow(pick);
-          }).catch(() => fillRow(null));
+          }).catch((e) => {
+            console.warn('Bridge auto-search failed for gap', entry.afterVinylId, e);
+            fillRow(null);
+          });
         }
       }
       listEl.appendChild(row);
@@ -522,7 +527,8 @@ export function renderLiveTab(container) {
         guestRequested: true,
         title: "Guest's vinyl request",
         onSave: (track) => {
-          const newOrder = insertVinylTrack(track, Store.getPlanOrder(), Store.getTracks());
+          const direction = getPlanDirection(Store.getSettings());
+          const newOrder = insertVinylTrack(track, Store.getPlanOrder(), Store.getTracks(), direction);
           Store.savePlanOrder(newOrder);
           refreshTurn();
         },

@@ -1,6 +1,6 @@
-import { Store } from './store.js?v=20260917d';
-import { insertVinylTrack } from './plan.js?v=20260917d';
-import { renderTrackForm } from './trackForm.js?v=20260917d';
+import { Store } from './store.js?v=20260917e';
+import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260917e';
+import { renderTrackForm } from './trackForm.js?v=20260917e';
 
 export function renderCrateTab(container) {
   container.innerHTML = `
@@ -24,6 +24,9 @@ export function renderCrateTab(container) {
     </div>
     <div class="card">
       <h3>Your plan order (tempo-flow)</h3>
+      <p class="hint">Starts mellow and builds up if your mood lever's start is lower than its end
+        (Settings → Set arc), or starts energetic and winds down if start is higher than end.</p>
+      <button type="button" class="secondary" id="reverse-plan-btn">Reverse order (flip start ↔ end vibe)</button>
       <div id="crate-list"></div>
     </div>
   `;
@@ -62,6 +65,7 @@ export function renderCrateTab(container) {
     if (!Array.isArray(incoming)) throw new Error('Expected a JSON array of tracks, or {tracks: [...]}.');
     let order = Store.getPlanOrder();
     const existing = Store.getTracks();
+    const direction = getPlanDirection(Store.getSettings());
     incoming.forEach((raw) => {
       const track = {
         id: raw.id || crypto.randomUUID(),
@@ -83,7 +87,7 @@ export function renderCrateTab(container) {
       Store.addTrack(track);
       existing.push(track);
       if (track.source === 'vinyl') {
-        order = insertVinylTrack(track, order, existing);
+        order = insertVinylTrack(track, order, existing, direction);
       }
     });
     Store.savePlanOrder(order);
@@ -95,10 +99,25 @@ export function renderCrateTab(container) {
     guestRequested: false,
     title: 'Add a vinyl to your crate',
     onSave: (track) => {
-      const newOrder = insertVinylTrack(track, Store.getPlanOrder(), Store.getTracks());
+      const direction = getPlanDirection(Store.getSettings());
+      const newOrder = insertVinylTrack(track, Store.getPlanOrder(), Store.getTracks(), direction);
       Store.savePlanOrder(newOrder);
       refreshList();
     },
+  });
+
+  container.querySelector('#reverse-plan-btn').addEventListener('click', () => {
+    const tracks = Store.getTracks();
+    const tracksById = new Map(tracks.map((t) => [t.id, t]));
+    const planOrder = Store.getPlanOrder();
+    const playedPrefixEnd = planOrder.reduce((last, id, idx) => {
+      const t = tracksById.get(id);
+      return t && t.played ? idx : last;
+    }, -1);
+    const prefix = planOrder.slice(0, playedPrefixEnd + 1);
+    const tail = planOrder.slice(playedPrefixEnd + 1).reverse();
+    Store.savePlanOrder([...prefix, ...tail]);
+    refreshList();
   });
 
   container.querySelector('#build-crate-btn').addEventListener('click', async () => {

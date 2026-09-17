@@ -52,6 +52,19 @@ this file only tracks current status and what's still open.
 - [ ] A few `data/collection.json` entries carry a `"note"` field flagging
       an unresolved/uncertain dictated title (e.g. Bob Dylan "Side
       Tracks") — fine to leave, fix opportunistically.
+- [x] Fixed the crate always sorting mellow-first regardless of intent:
+      `insertVinylTrack` now takes a `direction` ('asc'/'desc'), derived
+      via new `getPlanDirection(settings)` from Settings' Mood lever
+      start/end (start < end -> ascending/build-up, start > end ->
+      descending/wind-down). All insertion call sites (Crate Builder form,
+      bulk/one-click import, guest-add) now pass it. Added a "Reverse
+      order" button in Crate Builder to flip an already-built plan
+      in place without rebuilding. Regression test added for both
+      directions.
+- [x] Fixed misleading "TBD — finding a match…" text in Full Set staying
+      forever even after a lookahead search failed/errored - now
+      distinguishes "still loading" from "gave up, tap Change," and logs
+      the actual error to the console for diagnosis.
 - [x] Added real cache-busting after this bit the user four separate times
       tonight: every internal import and the `index.html` entry script now
       carry a shared `?v=<tag>` query string (see CLAUDE.md for the sed

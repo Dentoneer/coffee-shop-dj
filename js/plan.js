@@ -2,7 +2,7 @@
 // bridge target. Pure functions over Track[]/planOrder so they're easy to
 // reason about and test from the console.
 
-import { Store } from './store.js?v=20260917d';
+import { Store } from './store.js?v=20260917e';
 
 const GUEST_PRIORITY_WINDOW = 3; // last-played slot + next 2 unplayed
 
@@ -30,12 +30,23 @@ function unplayedIds(planOrder, tracksById) {
 }
 
 /**
+ * Whether new vinyl should sort low-BPM-first (mellow opener, building up -
+ * matches a mood lever that rises over the set) or high-BPM-first (energetic
+ * opener, winding down). Derived from Settings' lever start/end so "set your
+ * starting vibe" has one obvious place to configure it.
+ */
+export function getPlanDirection(settings) {
+  return settings.leverStart <= settings.leverEnd ? 'asc' : 'desc';
+}
+
+/**
  * Insert `track` (a vinyl track, not yet in planOrder) at its best slot.
  * Guest-requested tracks only compete for the next GUEST_PRIORITY_WINDOW
  * unplayed slots; owned-crate tracks compete across the whole unplayed tail.
- * Mutates nothing — returns the new planOrder array.
+ * `direction` ('asc' | 'desc') controls which way ties resolve - see
+ * getPlanDirection. Mutates nothing — returns the new planOrder array.
  */
-export function insertVinylTrack(track, planOrder, allTracks) {
+export function insertVinylTrack(track, planOrder, allTracks, direction = 'asc') {
   const tracksById = vinylTracksById(allTracks);
   tracksById.set(track.id, track);
 
@@ -73,8 +84,11 @@ export function insertVinylTrack(track, planOrder, allTracks) {
     const leftBpm = leftId ? tracksById.get(leftId)?.bpm ?? null : leftAnchorBpm;
     const rightBpm = rightId ? tracksById.get(rightId)?.bpm ?? null : null;
     const cost = insertionCost(track.bpm, leftBpm, rightBpm);
-    const violation = (leftBpm != null ? Math.max(0, leftBpm - track.bpm) : 0) +
-      (rightBpm != null ? Math.max(0, track.bpm - rightBpm) : 0);
+    const violation = direction === 'desc'
+      ? (leftBpm != null ? Math.max(0, track.bpm - leftBpm) : 0) +
+        (rightBpm != null ? Math.max(0, rightBpm - track.bpm) : 0)
+      : (leftBpm != null ? Math.max(0, leftBpm - track.bpm) : 0) +
+        (rightBpm != null ? Math.max(0, track.bpm - rightBpm) : 0);
     if (cost < bestCost || (cost === bestCost && violation < bestViolation)) {
       bestCost = cost;
       bestViolation = violation;

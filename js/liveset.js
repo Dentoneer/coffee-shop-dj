@@ -1,8 +1,8 @@
-import { Store, newId } from './store.js?v=20260917l';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917l';
-import { renderTrackForm } from './trackForm.js?v=20260917l';
-import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917l';
-import { createTapTempo } from './tapTempo.js?v=20260917l';
+import { Store, newId } from './store.js?v=20260917m';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917m';
+import { renderTrackForm } from './trackForm.js?v=20260917m';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20260917m';
+import { createTapTempo } from './tapTempo.js?v=20260917m';
 
 // Spotify's actual recommendation/audio-features endpoints are blocked for
 // any developer app created after Nov 2024 (403, permanently, short of
@@ -142,11 +142,15 @@ export function renderLiveTab(container) {
   // --- Editing an existing (not-yet-played) vinyl track's song/track # ---
   function renderVinylEditForm(mountEl, track, onDone) {
     mountEl.innerHTML = `
+      <label>Artist</label>
+      <input type="text" id="ve-artist" value="${track.artist || ''}" />
+      <label>Vinyl / album title</label>
+      <input type="text" id="ve-album" value="${track.album || ''}" />
       <div class="row">
         <input type="text" id="ve-title" placeholder="Song title" value="${track.title || ''}" />
         <input type="number" id="ve-tracknum" placeholder="Track #" style="flex:none;width:6rem;" value="${track.trackNumber ?? ''}" />
       </div>
-      <button type="button" class="secondary" id="ve-lookup">Look up ${track.album || 'album'} on Spotify</button>
+      <button type="button" class="secondary" id="ve-lookup">Look up on Spotify</button>
       <div id="ve-lookup-results"></div>
       <label>Tempo (tap along to the beat) <span class="hint">— currently ${track.bpm ?? '?'} BPM</span></label>
       <div class="tempo-readout" id="ve-bpm-readout">${track.bpm ?? '--'} BPM</div>
@@ -171,36 +175,55 @@ export function renderLiveTab(container) {
       editedBpm = e.target.value ? Number(e.target.value) : null;
       bpmConfirmed = true;
     });
+    // Searches whatever is currently typed - not locked to the record
+    // this slot started as, so this can swap to a completely different
+    // song/artist, not just pick another track off the same record.
     mountEl.querySelector('#ve-lookup').addEventListener('click', async () => {
       const resultsEl = mountEl.querySelector('#ve-lookup-results');
+      const liveArtist = mountEl.querySelector('#ve-artist').value.trim();
+      const liveAlbum = mountEl.querySelector('#ve-album').value.trim();
+      const liveTitle = mountEl.querySelector('#ve-title').value.trim();
+      const q = `${liveArtist} ${liveTitle || liveAlbum}`.trim();
+      if (!q) { resultsEl.innerHTML = '<p class="hint">Type an artist and song/album first.</p>'; return; }
       if (!isLoggedIn()) { resultsEl.innerHTML = '<p class="hint">Log into Spotify in Settings first.</p>'; return; }
-      if (!track.album) { resultsEl.innerHTML = '<p class="hint">No album on file for this track.</p>'; return; }
       resultsEl.innerHTML = '<p class="hint">Searching…</p>';
       try {
-        const albums = await searchAlbums(`${track.artist} ${track.album}`, 3);
-        if (albums.length === 0) { resultsEl.innerHTML = '<p class="hint">No match.</p>'; return; }
-        const tracks = await getAlbumTracks(albums[0].id);
+        const results = await searchTracks(q, 6);
         resultsEl.innerHTML = '';
-        tracks.forEach((t) => {
+        if (results.length === 0) { resultsEl.innerHTML = '<p class="hint">No match.</p>'; return; }
+        results.forEach((r) => {
           const row = document.createElement('div');
           row.className = 'track-row';
           row.style.cursor = 'pointer';
-          row.innerHTML = `<div class="track-meta"><div class="title">${t.trackNumber != null ? `${t.trackNumber}. ` : ''}${t.title}</div></div>`;
+          row.innerHTML = `
+            ${r.albumArt ? `<img src="${r.albumArt}" />` : ''}
+            <div class="track-meta">
+              <div class="title">${r.title}</div>
+              <div class="sub">${r.artist} &middot; ${r.album || ''}${r.trackNumber != null ? ` #${r.trackNumber}` : ''}</div>
+            </div>
+          `;
           row.addEventListener('click', () => {
-            mountEl.querySelector('#ve-title').value = t.title;
-            mountEl.querySelector('#ve-tracknum').value = t.trackNumber ?? '';
+            mountEl.querySelector('#ve-artist').value = r.artist;
+            mountEl.querySelector('#ve-album').value = r.album || liveAlbum;
+            mountEl.querySelector('#ve-title').value = r.title;
+            mountEl.querySelector('#ve-tracknum').value = r.trackNumber ?? '';
+            resultsEl.innerHTML = `<p class="hint">Picked: ${r.title} — ${r.artist}. Tap tempo, then Save.</p>`;
           });
           resultsEl.appendChild(row);
         });
       } catch (e) {
-        resultsEl.innerHTML = `<p class="hint">Lookup failed: ${e.message}</p>`;
+        resultsEl.innerHTML = `<p class="hint">Search failed: ${e.message}</p>`;
       }
     });
     mountEl.querySelector('#ve-save').addEventListener('click', () => {
+      const artist = mountEl.querySelector('#ve-artist').value.trim() || track.artist;
+      const album = mountEl.querySelector('#ve-album').value.trim() || track.album;
       const title = mountEl.querySelector('#ve-title').value.trim() || "(DJ's choice)";
       const tn = mountEl.querySelector('#ve-tracknum').value.trim();
       const newBpm = editedBpm ?? track.bpm;
       const updated = Store.updateTrack(track.id, {
+        artist,
+        album,
         title,
         trackNumber: tn ? Number(tn) : null,
         bpm: newBpm,

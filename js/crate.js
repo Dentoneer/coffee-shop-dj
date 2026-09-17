@@ -1,6 +1,6 @@
-import { Store } from './store.js?v=20260917l';
-import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260917l';
-import { renderTrackForm } from './trackForm.js?v=20260917l';
+import { Store } from './store.js?v=20260917m';
+import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260917m';
+import { renderTrackForm } from './trackForm.js?v=20260917m';
 
 export function renderCrateTab(container) {
   container.innerHTML = `

@@ -74,6 +74,15 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
+- [x] Fixed a real bug: the vinyl "Change" editor's Spotify lookup was
+      hardcoded to `track.artist`/`track.album` from the original closure,
+      completely ignoring anything typed into the form - so it could only
+      ever search the same record it started with. There was also no
+      Artist/Album field to edit in the first place. Added both fields
+      and switched the lookup to a live-value direct track search
+      (matching the Add form's pattern), so Change can now swap a slot to
+      a genuinely different song/artist, not just another track off the
+      same record. Verified visually.
 - [x] Made the Spotify "Next up" card visually match the vinyl one: plain
       track-row (no separate "Suggested next" label), then a `.row` of
       [primary action, "Change"] buttons, then a mount point for the

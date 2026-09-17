@@ -1,12 +1,12 @@
 // Shared "add a track" form: used by Crate Builder (owned vinyls) and by
 // Live Set's "add guest vinyl" flow. Artist + album are the record; song
-// title/track number are optional and can come from a Spotify album
-// lookup (search albums, then pick the real track off the tracklist) or
-// be left blank for "DJ picks by ear."
+// title/track number are optional and can come from a direct Spotify
+// track search (one click - track results already carry album + track
+// number) or be left blank for "DJ picks by ear."
 
 import { FLAVOR_TAGS, newId, Store } from './store.js';
 import { createTapTempo } from './tapTempo.js';
-import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js';
+import { searchTracks, isLoggedIn } from './spotify.js';
 
 /**
  * @param {HTMLElement} container
@@ -37,7 +37,7 @@ export function renderTrackForm(container, opts) {
         <input type="number" id="tf-tracknum" placeholder="Track #" style="flex:none;width:6rem;" />
       </div>
       ${source === 'vinyl' ? `
-        <button type="button" class="secondary" id="tf-spotify-lookup">Look up vinyl on Spotify (shows real tracklist)</button>
+        <button type="button" class="secondary" id="tf-spotify-lookup">Look up song on Spotify</button>
         <div id="tf-spotify-results"></div>
       ` : ''}
       <label>Tempo (tap along to the beat)</label>
@@ -95,58 +95,36 @@ export function renderTrackForm(container, opts) {
       const resultsEl = $('#tf-spotify-results');
       const artist = $('#tf-artist').value.trim();
       const album = $('#tf-album').value.trim();
-      const q = `${artist} ${album}`.trim();
-      if (!q) { resultsEl.innerHTML = '<p class="hint">Enter artist and album first.</p>'; return; }
+      const songTitle = $('#tf-title').value.trim();
+      const q = `${artist} ${songTitle || album}`.trim();
+      if (!q) { resultsEl.innerHTML = '<p class="hint">Enter at least an artist and album (or song, if you know it) first.</p>'; return; }
       if (!isLoggedIn()) { resultsEl.innerHTML = '<p class="hint">Log into Spotify in Settings first.</p>'; return; }
       resultsEl.innerHTML = '<p class="hint">Searching…</p>';
       try {
-        const albums = await searchAlbums(q, 5);
+        const results = await searchTracks(q, 6);
         resultsEl.innerHTML = '';
-        if (albums.length === 0) {
+        if (results.length === 0) {
           resultsEl.innerHTML = '<p class="hint">No match — that\'s fine, just fill in the fields by hand.</p>';
           return;
         }
-        albums.forEach((a) => {
+        results.forEach((r) => {
           const row = document.createElement('div');
           row.className = 'track-row';
           row.style.cursor = 'pointer';
           row.innerHTML = `
-            ${a.albumArt ? `<img src="${a.albumArt}" />` : ''}
+            ${r.albumArt ? `<img src="${r.albumArt}" />` : ''}
             <div class="track-meta">
-              <div class="title">${a.name}</div>
-              <div class="sub">${a.artist}</div>
+              <div class="title">${r.title}</div>
+              <div class="sub">${r.artist} &middot; ${r.album || ''}${r.trackNumber != null ? ` #${r.trackNumber}` : ''}</div>
             </div>
           `;
-          row.addEventListener('click', async () => {
-            resultsEl.innerHTML = '<p class="hint">Loading tracklist…</p>';
-            try {
-              const tracks = await getAlbumTracks(a.id);
-              if (tracks.length === 0) { resultsEl.innerHTML = '<p class="hint">No tracklist found for that album.</p>'; return; }
-              resultsEl.innerHTML = `<p class="hint">Pick the track you'll play from <strong>${a.name}</strong>:</p>`;
-              const list = document.createElement('div');
-              tracks.forEach((t) => {
-                const tRow = document.createElement('div');
-                tRow.className = 'track-row';
-                tRow.style.cursor = 'pointer';
-                tRow.innerHTML = `
-                  <div class="track-meta">
-                    <div class="title">${t.trackNumber != null ? `${t.trackNumber}. ` : ''}${t.title}</div>
-                  </div>
-                `;
-                tRow.addEventListener('click', () => {
-                  spotifyMatch = { albumArt: a.albumArt, uri: t.uri };
-                  $('#tf-artist').value = t.artist || a.artist;
-                  $('#tf-album').value = a.name;
-                  $('#tf-title').value = t.title;
-                  $('#tf-tracknum').value = t.trackNumber ?? '';
-                  resultsEl.innerHTML = `<p class="hint">Picked: ${t.trackNumber != null ? `#${t.trackNumber} ` : ''}${t.title} — ${a.name}</p>`;
-                });
-                list.appendChild(tRow);
-              });
-              resultsEl.appendChild(list);
-            } catch (e) {
-              resultsEl.innerHTML = `<p class="hint">Tracklist lookup failed: ${e.message}</p>`;
-            }
+          row.addEventListener('click', () => {
+            spotifyMatch = { albumArt: r.albumArt, uri: r.uri };
+            $('#tf-artist').value = r.artist;
+            $('#tf-album').value = r.album || album;
+            $('#tf-title').value = r.title;
+            $('#tf-tracknum').value = r.trackNumber ?? '';
+            resultsEl.innerHTML = `<p class="hint">Matched: ${r.trackNumber != null ? `#${r.trackNumber} ` : ''}${r.title} — ${r.album || ''}</p>`;
           });
           resultsEl.appendChild(row);
         });

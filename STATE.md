@@ -60,3 +60,10 @@ this file only tracks current status and what's still open.
 - [ ] Not yet tested with a real, logged-in Spotify session end-to-end by
       Claude (no way to drive OAuth headlessly) — the user is the first
       real-world test of login, search, and the planned-pick flow.
+- [x] Reverted the vinyl add-form's Spotify lookup from the two-step
+      album-search-then-tracklist flow back to a direct one-step track
+      search (`searchTracks` already returns album + track number per
+      hit, so the extra step was unnecessary complexity, not a real need).
+      The tracklist-browse flow (`getAlbumTracks`) is kept only inside the
+      "Change track" editor in Live Set, where browsing a known album's
+      full list is the actual intent.

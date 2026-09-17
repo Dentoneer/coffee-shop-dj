@@ -74,6 +74,15 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
+- [x] Slimmed the Mood lever card down to one compact row (label, slider,
+      auto checkbox, "Start" button) plus a one-line hint - was a full
+      multi-line card taking up a lot of vertical space for a control
+      that's set once and mostly ignored.
+- [x] Guest vinyl form now auto-collapses after 10s of no interaction
+      inside it (any input/click resets the timer, so a burst of quick
+      adds isn't cut off) - it was staying open indefinitely and eating
+      screen space. Verified with Chrome's virtual time (no real waiting)
+      that it opens correctly and is gone by 12s of inactivity.
 - [x] Raised `LOOKAHEAD_GAPS` from 3 to 25 - user confirmed the ones it
       did attempt worked correctly, just wanted more of the set filled in.
       Fetches are already serialized (one at a time), so this just takes

@@ -1,8 +1,8 @@
-import { Store, newId } from './store.js?v=20260917j';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917j';
-import { renderTrackForm } from './trackForm.js?v=20260917j';
-import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917j';
-import { createTapTempo } from './tapTempo.js?v=20260917j';
+import { Store, newId } from './store.js?v=20260917k';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917k';
+import { renderTrackForm } from './trackForm.js?v=20260917k';
+import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917k';
+import { createTapTempo } from './tapTempo.js?v=20260917k';
 
 // Spotify's actual recommendation/audio-features endpoints are blocked for
 // any developer app created after Nov 2024 (403, permanently, short of
@@ -35,16 +35,16 @@ const LOOKAHEAD_GAPS = 25;
 
 export function renderLiveTab(container) {
   container.innerHTML = `
-    <div class="card">
-      <h3>Mood lever <span id="lever-value"></span></h3>
-      <input type="range" id="lever-slider" min="1" max="5" step="0.1" />
-      <div class="row">
-        <label style="margin:0;flex:none;">
-          <input type="checkbox" id="lever-autodrift" /> Auto-drift
+    <div class="card" style="padding:0.5rem 0.8rem;">
+      <div class="row" style="gap:0.5rem;">
+        <strong style="flex:none;font-size:0.85rem;">Mood <span id="lever-value"></span></strong>
+        <input type="range" id="lever-slider" min="1" max="5" step="0.1" style="flex:2;" />
+        <label style="margin:0;flex:none;font-size:0.8rem;white-space:nowrap;">
+          <input type="checkbox" id="lever-autodrift" /> auto
         </label>
-        <button type="button" class="secondary" id="lever-start-set">Start set now</button>
+        <button type="button" class="secondary" id="lever-start-set" style="flex:none;padding:0.3rem 0.6rem;font-size:0.8rem;">Start</button>
       </div>
-      <p class="hint" id="lever-hint"></p>
+      <p class="hint" id="lever-hint" style="margin:0.2rem 0 0;font-size:0.75rem;"></p>
     </div>
 
     <div class="card" id="turn-card"></div>
@@ -77,8 +77,8 @@ export function renderLiveTab(container) {
     leverAutoDrift.checked = settings.autoDrift;
     container.querySelector('#lever-value').textContent = `— ${snap.leverValue.toFixed(1)} / 5`;
     container.querySelector('#lever-hint').textContent = settings.setStartedAt
-      ? `Set started ${new Date(settings.setStartedAt).toLocaleTimeString()} · drifts ${settings.leverStart} → ${settings.leverEnd} over ${settings.setDurationMinutes}min`
-      : 'Set not started — lever stays fixed until you hit "Start set now".';
+      ? `Drifting ${settings.leverStart}→${settings.leverEnd} over ${settings.setDurationMinutes}min`
+      : 'Not started — hit "Start" to begin the drift.';
   }
 
   leverSlider.addEventListener('input', () => {
@@ -582,23 +582,43 @@ export function renderLiveTab(container) {
   const toggleBtn = container.querySelector('#toggle-guest-form');
   const guestFormEl = container.querySelector('#guest-form');
   let guestFormShown = false;
+  let guestFormIdleTimer = null;
+
+  function closeGuestForm() {
+    clearTimeout(guestFormIdleTimer);
+    guestFormShown = false;
+    guestFormEl.innerHTML = '';
+  }
+
+  // Reclaims the space automatically after a stretch of no interaction,
+  // since guest vinyls tend to arrive in a burst and get left open
+  // afterward otherwise - reset on any input/click inside the form so a
+  // run of quick adds doesn't get cut off mid-way.
+  function scheduleGuestFormAutoClose() {
+    clearTimeout(guestFormIdleTimer);
+    guestFormIdleTimer = setTimeout(closeGuestForm, 10000);
+  }
+  guestFormEl.addEventListener('input', () => { if (guestFormShown) scheduleGuestFormAutoClose(); });
+  guestFormEl.addEventListener('click', () => { if (guestFormShown) scheduleGuestFormAutoClose(); });
+
   toggleBtn.addEventListener('click', () => {
-    guestFormShown = !guestFormShown;
     if (guestFormShown) {
-      renderTrackForm(guestFormEl, {
-        source: 'vinyl',
-        guestRequested: true,
-        title: "Guest's vinyl request",
-        onSave: (track) => {
-          const direction = getPlanDirection(Store.getSettings());
-          const newOrder = insertVinylTrack(track, Store.getPlanOrder(), Store.getTracks(), direction);
-          Store.savePlanOrder(newOrder);
-          refreshTurn();
-        },
-      });
-    } else {
-      guestFormEl.innerHTML = '';
+      closeGuestForm();
+      return;
     }
+    guestFormShown = true;
+    renderTrackForm(guestFormEl, {
+      source: 'vinyl',
+      guestRequested: true,
+      title: "Guest's vinyl request",
+      onSave: (track) => {
+        const direction = getPlanDirection(Store.getSettings());
+        const newOrder = insertVinylTrack(track, Store.getPlanOrder(), Store.getTracks(), direction);
+        Store.savePlanOrder(newOrder);
+        refreshTurn();
+      },
+    });
+    scheduleGuestFormAutoClose();
   });
 
   refreshLever();

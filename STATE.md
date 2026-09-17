@@ -61,6 +61,15 @@ this file only tracks current status and what's still open.
       order" button in Crate Builder to flip an already-built plan
       in place without rebuilding. Regression test added for both
       directions.
+- [x] Fixed the real reason only the first Spotify lookahead gap ever
+      resolved: `gapIndex` was `future.indexOf(entry)` - an index into the
+      full vinyl+gap interleaved array (0, 2, 4, 6...), not a count of gap
+      entries, so it undercounted against `LOOKAHEAD_GAPS` and silently
+      skipped fetching for the 2nd+ gap onward. Now uses a dedicated
+      `spotifyGapCount` counter incremented only for gap entries. Also
+      serialized the lookahead fetches (chained via a single promise
+      instead of fired concurrently) as a defensive measure against any
+      token-refresh/rate-limit races between simultaneous Spotify calls.
 - [x] Fixed misleading "TBD — finding a match…" text in Full Set staying
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs

@@ -1,7 +1,7 @@
-import { Store, newId } from './store.js?v=20260917e';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917e';
-import { renderTrackForm } from './trackForm.js?v=20260917e';
-import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917e';
+import { Store, newId } from './store.js?v=20260917f';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917f';
+import { renderTrackForm } from './trackForm.js?v=20260917f';
+import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917f';
 
 // Spotify's actual recommendation/audio-features endpoints are blocked for
 // any developer app created after Nov 2024 (403, permanently, short of
@@ -362,6 +362,8 @@ export function renderLiveTab(container) {
     if (future.length) future[0].upNow = true;
 
     listEl.innerHTML = '';
+    let spotifyGapCount = 0; // counts only spotify-gap entries, not vinyl rows
+    let fetchChain = Promise.resolve(); // serializes lookahead Spotify calls
 
     function makeRow() {
       const row = document.createElement('div');
@@ -480,21 +482,32 @@ export function renderLiveTab(container) {
         doGapSearch();
       }
 
-      const gapIndex = future.indexOf(entry);
+      // Bug fix: this used to be future.indexOf(entry) - an index into the
+      // full vinyl+gap interleaved array (0, 2, 4, 6...), so it undercounted
+      // which gaps actually qualified as "within the lookahead window" and
+      // silently skipped fetching for the 2nd+ gap onward.
+      const gapIndex = spotifyGapCount++;
       if (planned) {
         fillRow(planned);
       } else {
         const willAutoFetch = gapIndex < LOOKAHEAD_GAPS && isLoggedIn() && entry.afterVinylId;
         fillRow(null, { loading: willAutoFetch }); // always shows a Change button, even pre-login
         if (willAutoFetch) {
-          const bt2 = getBridgeTarget(entry.leftVinyl, entry.rightVinyl, Store.getSettings());
-          searchTracks(buildAutoQuery(bt2), 1).then((results) => {
-            const pick = results[0] || null;
-            if (pick) Store.setPlannedSpotifyFor(entry.afterVinylId, pick);
-            fillRow(pick);
-          }).catch((e) => {
-            console.warn('Bridge auto-search failed for gap', entry.afterVinylId, e);
-            fillRow(null);
+          // Chained rather than fired concurrently: parallel Spotify calls
+          // right after a fresh page load can race on token refresh/rate
+          // limits, which was intermittently starving every gap after the
+          // first even once the indexing above is correct.
+          fetchChain = fetchChain.then(async () => {
+            try {
+              const bt2 = getBridgeTarget(entry.leftVinyl, entry.rightVinyl, Store.getSettings());
+              const results = await searchTracks(buildAutoQuery(bt2), 1);
+              const pick = results[0] || null;
+              if (pick) Store.setPlannedSpotifyFor(entry.afterVinylId, pick);
+              fillRow(pick);
+            } catch (e) {
+              console.warn('Bridge auto-search failed for gap', entry.afterVinylId, e);
+              fillRow(null);
+            }
           });
         }
       }

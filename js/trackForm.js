@@ -4,9 +4,9 @@
 // track search (one click - track results already carry album + track
 // number) or be left blank for "DJ picks by ear."
 
-import { FLAVOR_TAGS, newId, Store } from './store.js?v=20260917e';
-import { createTapTempo } from './tapTempo.js?v=20260917e';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20260917e';
+import { FLAVOR_TAGS, newId, Store } from './store.js?v=20260917f';
+import { createTapTempo } from './tapTempo.js?v=20260917f';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20260917f';
 
 /**
  * @param {HTMLElement} container

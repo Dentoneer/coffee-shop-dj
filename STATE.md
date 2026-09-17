@@ -4,9 +4,11 @@ _Last updated: 2026-09-16_
 
 ## Current status
 
-Building the MVP same-night for a set on 2026-09-17. In progress: initial
-implementation (data layer, Spotify PKCE auth, plan/insertion logic,
-tap-tempo, Crate Builder + Live Set + Settings screens).
+MVP built and deployed for a set on 2026-09-17. Live at
+https://dentoneer.github.io/coffee-shop-dj/ (repo: Dentoneer/coffee-shop-dj,
+GitHub Pages serving from `master` root). Core plan/insertion logic
+verified via a Node smoke test (caught and fixed a guest-priority-window
+off-by-one bug). UI render verified via headless Edge screenshot.
 
 ## Recent decisions
 
@@ -25,12 +27,15 @@ tap-tempo, Crate Builder + Live Set + Settings screens).
 
 ## Open threads / next steps
 
-- [ ] Finish implementation (store/spotify/plan/tapTempo/crate/liveset/app).
-- [ ] Local smoke test via a local static server + `127.0.0.1` Spotify
-      redirect URI.
-- [ ] User needs to register a free Spotify Developer app tonight to get a
-      Client ID, and add both the local test URL and the eventual GitHub
-      Pages URL as redirect URIs.
-- [ ] Create the GitHub repo + enable Pages (needs user confirmation before
-      pushing/creating remote state).
-- [ ] User adds their ~10 vinyls via Crate Builder tonight (tap-tempo each).
+- [x] Finish implementation (store/spotify/plan/tapTempo/crate/liveset/app).
+- [x] Create the GitHub repo + enable Pages.
+- [ ] User registers a free Spotify Developer app to get a Client ID, adds
+      `https://dentoneer.github.io/coffee-shop-dj/` as a Redirect URI, and
+      pastes the Client ID into the app's Settings tab.
+- [ ] User dictates their vinyl collection; Claude picks ~10-15 for the
+      vibe + tempo arc, gives a track-per-record + starting BPM/energy, and
+      hands back a JSON file for the Crate Builder's bulk import.
+- [ ] User adds/confirms their vinyls via Crate Builder (tap-tempo each to
+      confirm the BPM estimate).
+- [ ] Every future push to `master` auto-deploys to Pages — no separate
+      deploy step needed.

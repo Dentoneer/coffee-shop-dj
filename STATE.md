@@ -74,6 +74,16 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
+- [x] Playlist fetch was succeeding (200 OK) but parsing 0 tracks - the
+      `fields` filter expression likely named a path Spotify's March 2026
+      migration also trimmed from response objects, which returns empty
+      rather than erroring. Dropped the filter, parse the full object
+      defensively (tolerates either `{track: {...}}` or a flat item
+      shape). Also added `getPlaylistRawSample()` + wired it into
+      Settings' "Save & test": if a playlist still parses to 0 tracks,
+      the status message now shows the actual raw JSON Spotify returned
+      (truncated) directly in the UI, no DevTools needed, so any further
+      mismatch is visible immediately instead of guessed at blind.
 - [x] Found the actual root cause of the playlist fetch failing even after
       a fresh login/scope grant: `getPlaylistTracks` was calling
       `/playlists/{id}/tracks`, which Spotify deprecated and removed for

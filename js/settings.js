@@ -1,5 +1,5 @@
-import { Store } from './store.js?v=20260917r';
-import { login, logout, isLoggedIn, handleRedirect, getPlaylistTracks, parsePlaylistId } from './spotify.js?v=20260917r';
+import { Store } from './store.js?v=20260917s';
+import { login, logout, isLoggedIn, handleRedirect, getPlaylistTracks, parsePlaylistId, getPlaylistRawSample } from './spotify.js?v=20260917s';
 
 export function renderSettingsTab(container) {
   const settings = Store.getSettings();
@@ -93,8 +93,19 @@ export function renderSettingsTab(container) {
     }));
     const failed = results.filter((r) => !r.ok);
     const okTotal = results.filter((r) => r.ok).reduce((sum, r) => sum + r.count, 0);
-    if (failed.length === 0) {
+    if (failed.length === 0 && okTotal > 0) {
       statusEl.textContent = `Connected — pulled ${okTotal} track(s) from ${results.length} playlist(s). Bridges will use these.`;
+    } else if (failed.length === 0 && okTotal === 0) {
+      // Request succeeded but parsed zero tracks - grab a raw sample so
+      // there's something concrete to look at instead of guessing blind.
+      statusEl.textContent = 'Connected, but parsed 0 tracks - fetching a raw sample to see why…';
+      try {
+        const sample = await getPlaylistRawSample(ids[0]);
+        statusEl.textContent = `Connected, but parsed 0 tracks from ${ids.length} playlist(s). `
+          + `Raw response for the first one (status ${sample.status}): ${sample.body}`;
+      } catch (e) {
+        statusEl.textContent = `Connected, but parsed 0 tracks, and the raw sample fetch also failed: ${e.message}`;
+      }
     } else if (failed.some((r) => r.error.includes('403'))) {
       statusEl.textContent = `Failed (403 — missing permission). Click "Log out" above, then "Log into Spotify" again to grant playlist access, then Save & test once more.`;
     } else {

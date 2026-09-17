@@ -2,7 +2,7 @@
 // that's the point of PKCE for a public static site. Used only for catalog
 // search (track lookup, album art); no playback control, no audio-features.
 
-import { Store } from './store.js?v=20260917r';
+import { Store } from './store.js?v=20260917s';
 
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -202,7 +202,11 @@ export async function getPlaylistTracks(playlistId, limit = 100) {
     const params = new URLSearchParams({
       limit: String(Math.min(50, limit - offset)),
       offset: String(offset),
-      fields: 'items(track(name,artists,album(name,images),track_number,uri,external_urls)),total',
+      // No `fields` filter: Spotify's March 2026 migration also trimmed
+      // response objects, and a filter expression naming a field that no
+      // longer exists silently returns nothing rather than erroring -
+      // that's what happened here. Fetching the full object and parsing
+      // defensively is safer than guessing the new trimmed shape.
     });
     // /playlists/{id}/tracks was deprecated and removed for Development
     // Mode apps in Spotify's March 2026 migration - renamed to /items.
@@ -212,12 +216,13 @@ export async function getPlaylistTracks(playlistId, limit = 100) {
     if (!res.ok) throw new Error(`Spotify playlist fetch failed: ${res.status}`);
     const data = await res.json();
     const items = data.items || [];
+    if (offset === 0) console.debug('Spotify playlist items sample:', items[0]);
     items.forEach((item) => {
-      const t = item.track;
-      if (!t) return;
+      const t = item.track || item; // tolerate either {track: {...}} or a flat item shape
+      if (!t || !t.uri) return;
       out.push({
         title: t.name,
-        artist: t.artists.map((a) => a.name).join(', '),
+        artist: (t.artists || []).map((a) => a.name).join(', '),
         album: t.album?.name,
         trackNumber: t.track_number ?? null,
         albumArt: t.album?.images?.[2]?.url || t.album?.images?.[0]?.url || null,
@@ -228,6 +233,18 @@ export async function getPlaylistTracks(playlistId, limit = 100) {
     if (items.length < 50) break; // reached the end of the playlist
   }
   return out;
+}
+
+/** Raw first item of a playlist, unparsed - for showing the DJ (or us)
+ * exactly what Spotify is actually returning when the normal parse comes
+ * back empty, without needing to open DevTools mid-event. */
+export async function getPlaylistRawSample(playlistId) {
+  const token = await getValidToken();
+  const res = await fetch(`${API_BASE}/playlists/${playlistId}/items?limit=1`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const text = await res.text();
+  return { status: res.status, body: text.slice(0, 500) };
 }
 
 export function logout() {

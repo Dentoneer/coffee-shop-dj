@@ -56,9 +56,28 @@ actual turntable.
       leave as-is, correct opportunistically if the user brings it up.
 - [ ] Every future push to `master` auto-deploys to Pages — no separate
       deploy step needed.
-- [x] Added a "Song title" vs "Just the vinyl (pick a song for me)" toggle
-      to the shared add-track form (`js/trackForm.js`) for live guest
-      requests — vinyl mode searches Spotify albums instead of tracks and
-      auto-picks the first track via `spotify.js`'s new `searchAlbums`/
-      `getAlbumFirstTrack`. Falls back to a clearly-labeled "(DJ's choice,
-      from <album>)" placeholder if no Spotify match is picked.
+- [x] Superseded the song/vinyl toggle with proper separate `album` and
+      `trackNumber` fields on Track (was overloading `title`). The
+      Spotify-lookup flow for vinyl now searches albums, loads the real
+      tracklist (`spotify.js`'s `getAlbumTracks`), and lets the DJ click
+      the actual track — far more accurate than the old first-track guess.
+- [x] Confirmed: Spotify's `/recommendations` endpoint 403s permanently for
+      any app created after Nov 27 2024 (ours included) - no real "Spotify
+      algorithm" is reachable short of 250k+ MAU extended access. Live Set's
+      Spotify turn now auto-builds a search query from the bridge target's
+      flavor tags and auto-runs it (no typing required), with an explicit
+      note in the UI explaining why it's not true ML recommendations.
+      Confirmed with the user: their Spotify account has Premium, satisfying
+      the Feb 2026 Developer Mode requirement.
+- [x] Added a "Full set" list to Live Set showing played history + the
+      upcoming vinyl plan with Spotify bridge slots marked "TBD — chosen
+      live" (the very next one gets a highlight + note to see the bridge
+      target above). Every row shows artist/album/track#/song.
+- [x] Fixed a real ordering bug in `js/plan.js` `insertVinylTrack`: ties in
+      insertion cost at an unanchored boundary (e.g. the very first insert
+      into an empty plan) resolved to "first candidate wins," which could
+      put a *higher*-BPM track before a lower one. Added a tie-break that
+      prefers whichever side keeps neighbors in ascending BPM order.
+      Regression test added and passing (ascending + descending add order).
+- [x] Reworked tonight's 13-track import JSON to the new album/trackNumber
+      schema and handed it to the user again.

@@ -138,6 +138,7 @@ export async function searchTracks(query, limit = 8) {
     title: t.name,
     artist: t.artists.map((a) => a.name).join(', '),
     album: t.album?.name,
+    trackNumber: t.track_number ?? null,
     albumArt: t.album?.images?.[2]?.url || t.album?.images?.[0]?.url || null,
     uri: t.uri,
     externalUrl: t.external_urls?.spotify,
@@ -161,17 +162,20 @@ export async function searchAlbums(query, limit = 5) {
   }));
 }
 
-/** First track of an album, for auto-picking a song when the DJ only knows the vinyl. */
-export async function getAlbumFirstTrack(albumId) {
+/** Full tracklist of an album, so the DJ can pick a real track number/title. */
+export async function getAlbumTracks(albumId, limit = 50) {
   const token = await getValidToken();
-  const res = await fetch(`${API_BASE}/albums/${albumId}/tracks?limit=1`, {
+  const res = await fetch(`${API_BASE}/albums/${albumId}/tracks?limit=${limit}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new Error(`Spotify album tracks failed: ${res.status}`);
   const data = await res.json();
-  const t = data.items?.[0];
-  if (!t) return null;
-  return { title: t.name, artist: t.artists.map((a) => a.name).join(', '), uri: t.uri };
+  return (data.items || []).map((t) => ({
+    trackNumber: t.track_number ?? null,
+    title: t.name,
+    artist: t.artists.map((a) => a.name).join(', '),
+    uri: t.uri,
+  }));
 }
 
 export function logout() {

@@ -33,12 +33,15 @@ export function renderCrateTab(container) {
     planOrder.forEach((id, idx) => {
       const t = byId.get(id);
       if (!t) return;
+      const albumBits = [];
+      if (t.album) albumBits.push(t.album);
+      if (t.trackNumber != null) albumBits.push(`#${t.trackNumber}`);
       const row = document.createElement('div');
       row.className = 'track-row';
       row.innerHTML = `
         <div class="track-meta">
-          <div class="title">${idx + 1}. ${t.title} ${t.played ? '&#9989;' : ''}</div>
-          <div class="sub">${t.artist} &middot; ${t.bpm ?? '?'} BPM &middot; energy ${t.energy}
+          <div class="title">${idx + 1}. ${t.artist} — ${t.title} ${t.played ? '&#9989;' : ''}</div>
+          <div class="sub">${albumBits.length ? `${albumBits.join(' ')} &middot; ` : ''}${t.bpm ?? '?'} BPM &middot; energy ${t.energy}
             ${t.guestRequested ? '<span class="badge guest">guest</span>' : ''}
           </div>
         </div>
@@ -72,6 +75,8 @@ export function renderCrateTab(container) {
           id: raw.id || crypto.randomUUID(),
           title: raw.title,
           artist: raw.artist,
+          album: raw.album || null,
+          trackNumber: raw.trackNumber ?? null,
           source: raw.source || 'vinyl',
           bpm: raw.bpm ?? null,
           energy: raw.energy ?? 3,

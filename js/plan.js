@@ -59,16 +59,25 @@ export function insertVinylTrack(track, planOrder, allTracks) {
     ? Math.min(GUEST_PRIORITY_WINDOW - 1, unplayedTail.length)
     : unplayedTail.length;
 
+  // Cost alone ties whenever a slot has an anchor on only one side (e.g.
+  // the very first insert into an empty plan) - "before everything" and
+  // "after everything" score identically. Break ties toward whichever
+  // side keeps neighbors in ascending BPM order, so the plan converges on
+  // a tempo-sorted sequence instead of an arbitrary insertion order.
   let bestIdx = 0;
   let bestCost = Infinity;
+  let bestViolation = Infinity;
   for (let i = 0; i <= maxIdx; i++) {
     const leftId = i === 0 ? null : unplayedTail[i - 1];
     const rightId = i < unplayedTail.length ? unplayedTail[i] : null;
     const leftBpm = leftId ? tracksById.get(leftId)?.bpm ?? null : leftAnchorBpm;
     const rightBpm = rightId ? tracksById.get(rightId)?.bpm ?? null : null;
     const cost = insertionCost(track.bpm, leftBpm, rightBpm);
-    if (cost < bestCost) {
+    const violation = (leftBpm != null ? Math.max(0, leftBpm - track.bpm) : 0) +
+      (rightBpm != null ? Math.max(0, track.bpm - rightBpm) : 0);
+    if (cost < bestCost || (cost === bestCost && violation < bestViolation)) {
       bestCost = cost;
+      bestViolation = violation;
       bestIdx = i;
     }
   }

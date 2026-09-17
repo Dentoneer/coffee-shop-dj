@@ -1,5 +1,5 @@
-import { Store } from './store.js?v=20260917o';
-import { login, logout, isLoggedIn, handleRedirect } from './spotify.js?v=20260917o';
+import { Store } from './store.js?v=20260917p';
+import { login, logout, isLoggedIn, handleRedirect, getPlaylistTracks, parsePlaylistId } from './spotify.js?v=20260917p';
 
 export function renderSettingsTab(container) {
   const settings = Store.getSettings();
@@ -16,8 +16,9 @@ export function renderSettingsTab(container) {
       <textarea id="s-playlists" rows="2" placeholder="Paste one or more playlist links/IDs, separated by commas or new lines" style="width:100%;">${settings.spotifyPlaylistUrls}</textarea>
       <p class="hint">Live Set picks ~90% of Spotify bridges from these, ~10% fresh from search, for variety.
         Leave blank to use search only. Needs the <code>playlist-read</code> scope — if you logged in before
-        this existed, log out and back in once to grant it.</p>
-      <div style="margin-top:0.4rem"><button type="button" class="secondary" id="s-save-playlists">Save</button></div>
+        this existed, click "Log out" above, then "Log into Spotify" again to grant it (one time).</p>
+      <div style="margin-top:0.4rem"><button type="button" class="secondary" id="s-save-playlists">Save &amp; test</button></div>
+      <p class="hint" id="s-playlist-status"></p>
     </div>
 
     <div class="card">
@@ -68,9 +69,37 @@ export function renderSettingsTab(container) {
     Store.updateSettings({ spotifyClientId: e.target.value.trim() });
   });
 
-  container.querySelector('#s-save-playlists').addEventListener('click', () => {
-    Store.updateSettings({ spotifyPlaylistUrls: container.querySelector('#s-playlists').value.trim() });
-    container.querySelector('#s-backup-status').textContent = 'Playlists saved.';
+  container.querySelector('#s-save-playlists').addEventListener('click', async () => {
+    const raw = container.querySelector('#s-playlists').value.trim();
+    Store.updateSettings({ spotifyPlaylistUrls: raw });
+    const statusEl = container.querySelector('#s-playlist-status');
+    const ids = raw.split(/[,\n]/).map((s) => s.trim()).filter(Boolean).map(parsePlaylistId);
+    if (ids.length === 0) {
+      statusEl.textContent = 'Saved (no playlists set — bridges will use search only).';
+      return;
+    }
+    if (!isLoggedIn()) {
+      statusEl.textContent = 'Saved, but you\'re not logged into Spotify — click "Log into Spotify" above first, then Save & test again.';
+      return;
+    }
+    statusEl.textContent = 'Testing…';
+    const results = await Promise.all(ids.map(async (id) => {
+      try {
+        const tracks = await getPlaylistTracks(id, 50);
+        return { id, ok: true, count: tracks.length };
+      } catch (e) {
+        return { id, ok: false, error: e.message };
+      }
+    }));
+    const failed = results.filter((r) => !r.ok);
+    const okTotal = results.filter((r) => r.ok).reduce((sum, r) => sum + r.count, 0);
+    if (failed.length === 0) {
+      statusEl.textContent = `Connected — pulled ${okTotal} track(s) from ${results.length} playlist(s). Bridges will use these.`;
+    } else if (failed.some((r) => r.error.includes('403'))) {
+      statusEl.textContent = `Failed (403 — missing permission). Click "Log out" above, then "Log into Spotify" again to grant playlist access, then Save & test once more.`;
+    } else {
+      statusEl.textContent = `${okTotal} track(s) loaded OK, but ${failed.length} playlist(s) failed: ${failed.map((r) => `${r.id} (${r.error})`).join(', ')}. Check the link(s) are correct.`;
+    }
   });
 
   container.querySelector('#s-save-arc').addEventListener('click', () => {

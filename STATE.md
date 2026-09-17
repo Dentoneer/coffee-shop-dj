@@ -74,6 +74,17 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
+- [x] "Save" for playlists was silent (just said "Playlists saved" with no
+      indication whether the fetch actually worked) - the real cause of
+      "why can't you pull my playlist" is almost certainly that the login
+      scope was only added going forward, and Spotify doesn't retroactively
+      grant scope to an existing token on refresh - a one-time re-login is
+      unavoidable. Renamed the button "Save & test": it now actually
+      fetches each configured playlist immediately and reports real
+      track counts or the exact failure (not-logged-in / 403-missing-scope
+      with the log-out-then-in instruction / other error with the raw
+      message), instead of trusting it silently. Verified both the
+      not-logged-in and fetch-failure report paths visually.
 - [x] Hardened the drag-to-reorder after user reported it not working:
       bigger CSS-drawn handle (was a tiny Unicode glyph, likely too small
       a touch/click target), pointer capture on the handle, and - most

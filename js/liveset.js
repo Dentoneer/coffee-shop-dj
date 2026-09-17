@@ -1,8 +1,8 @@
-import { Store, newId } from './store.js?v=20260917k';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917k';
-import { renderTrackForm } from './trackForm.js?v=20260917k';
-import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917k';
-import { createTapTempo } from './tapTempo.js?v=20260917k';
+import { Store, newId } from './store.js?v=20260917l';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917l';
+import { renderTrackForm } from './trackForm.js?v=20260917l';
+import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917l';
+import { createTapTempo } from './tapTempo.js?v=20260917l';
 
 // Spotify's actual recommendation/audio-features endpoints are blocked for
 // any developer app created after Nov 2024 (403, permanently, short of
@@ -254,6 +254,9 @@ export function renderLiveTab(container) {
   }
 
   // --- The single active Spotify bridge turn ("Next up") ---
+  // Mirrors renderVinylTurn's layout on purpose: a track-row, then a
+  // .row of [primary action, secondary "Change"], then a mount point -
+  // same shape as vinyl's [Mark played, Change track] + change-vinyl-mount.
   function renderSpotifyTurn(turnCard, snap) {
     const afterVinylId = snap.lastPlayed?.id;
     const bt = snap.bridgeTarget;
@@ -267,15 +270,12 @@ export function renderLiveTab(container) {
         <p class="hint">Spotify's own recommendation engine is blocked for new developer apps
           (locked down Nov 2024) — this auto-picks the top match from the target above, not a true ML pick.</p>
       </div>
-      <div id="spotify-suggestion"></div>
-      <details id="spotify-change-details" style="margin-top:0.6rem">
-        <summary class="hint" style="cursor:pointer">Don't like it? Search for something else</summary>
-        <div class="row" style="margin-top:0.5rem">
-          <input type="text" id="spotify-search-input" value="${autoQuery}" />
-          <button type="button" id="spotify-search-btn">Search</button>
-        </div>
-        <div id="spotify-search-results"></div>
-      </details>
+      <div id="spotify-suggestion-row"></div>
+      <div class="row" id="spotify-action-row" style="display:none;">
+        <button type="button" id="spotify-play-suggestion">Play this</button>
+        <button type="button" class="secondary" id="spotify-change-btn">Change</button>
+      </div>
+      <div id="spotify-search-mount" style="margin-top:0.6rem"></div>
     `;
 
     function playResult(r) {
@@ -302,13 +302,15 @@ export function renderLiveTab(container) {
     }
 
     function renderSuggestion(r) {
-      const suggestionEl = turnCard.querySelector('#spotify-suggestion');
+      const rowEl = turnCard.querySelector('#spotify-suggestion-row');
+      const actionRow = turnCard.querySelector('#spotify-action-row');
       if (!r) {
-        suggestionEl.innerHTML = '<p class="hint">No auto-match found — use the search below.</p>';
+        rowEl.innerHTML = '<p class="hint">No auto-match found — use Change to search.</p>';
+        actionRow.style.display = 'flex';
+        turnCard.querySelector('#spotify-play-suggestion').style.display = 'none';
         return;
       }
-      suggestionEl.innerHTML = `
-        <label>Suggested next</label>
+      rowEl.innerHTML = `
         <div class="track-row">
           ${r.albumArt ? `<img src="${r.albumArt}" />` : ''}
           <div class="track-meta">
@@ -316,9 +318,11 @@ export function renderLiveTab(container) {
             <div class="sub">${r.artist} &middot; ${r.album || ''}${r.trackNumber != null ? ` #${r.trackNumber}` : ''}</div>
           </div>
         </div>
-        <button type="button" id="spotify-play-suggestion">Play this</button>
       `;
-      suggestionEl.querySelector('#spotify-play-suggestion').addEventListener('click', () => playResult(r));
+      actionRow.style.display = 'flex';
+      const playBtn = turnCard.querySelector('#spotify-play-suggestion');
+      playBtn.style.display = '';
+      playBtn.onclick = () => playResult(r);
     }
 
     function resultRow(r, onPick) {
@@ -337,40 +341,44 @@ export function renderLiveTab(container) {
       return row;
     }
 
-    async function doSearch({ intoSuggestion } = {}) {
-      const q = turnCard.querySelector('#spotify-search-input').value.trim();
-      const resultsEl = turnCard.querySelector('#spotify-search-results');
-      if (!q) return;
-      if (!isLoggedIn()) {
-        turnCard.querySelector('#spotify-suggestion').innerHTML = '<p class="hint">Log into Spotify in Settings first.</p>';
-        return;
-      }
-      if (!intoSuggestion) resultsEl.innerHTML = '<p class="hint">Searching…</p>';
-      try {
-        const results = await searchTracks(q, 8);
-        if (intoSuggestion) {
-          if (afterVinylId && results[0]) Store.setPlannedSpotifyFor(afterVinylId, results[0]);
-          renderSuggestion(results[0] || null);
+    function renderSearchUI() {
+      const mount = turnCard.querySelector('#spotify-search-mount');
+      mount.innerHTML = `
+        <label>Search Spotify</label>
+        <div class="row">
+          <input type="text" id="spotify-search-input" value="${autoQuery}" />
+          <button type="button" id="spotify-search-btn">Search</button>
+        </div>
+        <div id="spotify-search-results"></div>
+      `;
+      async function doSearch() {
+        const q = mount.querySelector('#spotify-search-input').value.trim();
+        const resultsEl = mount.querySelector('#spotify-search-results');
+        if (!q) return;
+        if (!isLoggedIn()) { resultsEl.innerHTML = '<p class="hint">Log into Spotify in Settings first.</p>'; return; }
+        resultsEl.innerHTML = '<p class="hint">Searching…</p>';
+        try {
+          const results = await searchTracks(q, 8);
           resultsEl.innerHTML = '';
-          results.slice(1).forEach((r) => resultsEl.appendChild(resultRow(r, playResult)));
-          return;
+          results.forEach((r) => resultsEl.appendChild(resultRow(r, playResult)));
+          if (results.length === 0) resultsEl.innerHTML = '<p class="hint">No results — try editing the search above.</p>';
+        } catch (e) {
+          resultsEl.innerHTML = `<p class="hint">Search failed: ${e.message}</p>`;
         }
-        resultsEl.innerHTML = '';
-        results.forEach((r) => resultsEl.appendChild(resultRow(r, playResult)));
-        if (results.length === 0) resultsEl.innerHTML = '<p class="hint">No results — try editing the search above.</p>';
-      } catch (e) {
-        const target = intoSuggestion ? turnCard.querySelector('#spotify-suggestion') : resultsEl;
-        target.innerHTML = `<p class="hint">Search failed: ${e.message}</p>`;
       }
+      mount.querySelector('#spotify-search-btn').addEventListener('click', doSearch);
+      mount.querySelector('#spotify-search-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') doSearch();
+      });
+      doSearch();
     }
 
-    turnCard.querySelector('#spotify-search-btn').addEventListener('click', () => doSearch());
-    turnCard.querySelector('#spotify-search-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') doSearch();
-    });
+    turnCard.querySelector('#spotify-change-btn').addEventListener('click', renderSearchUI);
 
     if (!isLoggedIn()) {
-      turnCard.querySelector('#spotify-suggestion').innerHTML = '<p class="hint">Log into Spotify in Settings first.</p>';
+      turnCard.querySelector('#spotify-suggestion-row').innerHTML = '<p class="hint">Log into Spotify in Settings first.</p>';
+      turnCard.querySelector('#spotify-action-row').style.display = 'flex';
+      turnCard.querySelector('#spotify-play-suggestion').style.display = 'none';
       return;
     }
 
@@ -378,8 +386,18 @@ export function renderLiveTab(container) {
     // suggestion here matches what was already shown/chosen below — only
     // fall back to a fresh auto-search if nothing was planned yet.
     const planned = afterVinylId ? Store.getPlannedSpotifyFor(afterVinylId) : null;
-    if (planned) renderSuggestion(planned);
-    else doSearch({ intoSuggestion: true });
+    turnCard.querySelector('#spotify-suggestion-row').innerHTML = planned ? '' : '<p class="hint">Finding a match…</p>';
+    if (planned) {
+      renderSuggestion(planned);
+    } else if (afterVinylId) {
+      searchTracks(autoQuery, 1).then((results) => {
+        const pick = results[0] || null;
+        if (pick) Store.setPlannedSpotifyFor(afterVinylId, pick);
+        renderSuggestion(pick);
+      }).catch(() => renderSuggestion(null));
+    } else {
+      renderSuggestion(null);
+    }
   }
 
   // --- Full set list: history + upcoming plan, with per-row "Change" ---

@@ -74,6 +74,13 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
+- [x] Made the Spotify "Next up" card visually match the vinyl one: plain
+      track-row (no separate "Suggested next" label), then a `.row` of
+      [primary action, "Change"] buttons, then a mount point for the
+      expanded search UI - same shape as vinyl's [Mark played, Change
+      track] + change-vinyl-mount. Replaced the old `<details>` collapsible
+      search with the same click-to-expand mount pattern vinyl already
+      used. Verified visually with a faked login + planned pick.
 - [x] Slimmed the Mood lever card down to one compact row (label, slider,
       auto checkbox, "Start" button) plus a one-line hint - was a full
       multi-line card taking up a lot of vertical space for a control

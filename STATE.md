@@ -74,6 +74,13 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
+- [x] Guest-vinyl Spotify search results only filled form fields, never
+      auto-saved - not obvious live. Confirmation message now bold and
+      explicit about the remaining two steps (tap Tempo, click Add), and
+      auto-scrolls to Tempo.
+- [x] TBD gap rows now show the real failure (error message or "0 results
+      for <query>") instead of a silent console-only warning - needed for
+      diagnosing why gaps 2/3 still failed after the indexing fix.
 - [x] Added real cache-busting after this bit the user four separate times
       tonight: every internal import and the `index.html` entry script now
       carry a shared `?v=<tag>` query string (see CLAUDE.md for the sed

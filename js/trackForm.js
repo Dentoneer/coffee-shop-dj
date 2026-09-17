@@ -4,9 +4,9 @@
 // track search (one click - track results already carry album + track
 // number) or be left blank for "DJ picks by ear."
 
-import { FLAVOR_TAGS, newId, Store } from './store.js?v=20260917f';
-import { createTapTempo } from './tapTempo.js?v=20260917f';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20260917f';
+import { FLAVOR_TAGS, newId, Store } from './store.js?v=20260917g';
+import { createTapTempo } from './tapTempo.js?v=20260917g';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20260917g';
 
 /**
  * @param {HTMLElement} container
@@ -124,7 +124,14 @@ export function renderTrackForm(container, opts) {
             $('#tf-album').value = r.album || album;
             $('#tf-title').value = r.title;
             $('#tf-tracknum').value = r.trackNumber ?? '';
-            resultsEl.innerHTML = `<p class="hint">Matched: ${r.trackNumber != null ? `#${r.trackNumber} ` : ''}${r.title} — ${r.album || ''}</p>`;
+            resultsEl.innerHTML = `
+              <p style="color:var(--accent);font-weight:bold;">
+                &#10003; Matched: ${r.trackNumber != null ? `#${r.trackNumber} ` : ''}${r.title} — ${r.album || ''}.
+                This only fills in the fields — tap Tempo below, then click
+                "${guestRequested ? 'Add guest request' : 'Add to crate'}" to actually save it.
+              </p>
+            `;
+            $('#tf-tap').scrollIntoView({ behavior: 'smooth', block: 'center' });
           });
           resultsEl.appendChild(row);
         });

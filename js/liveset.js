@@ -1,7 +1,7 @@
-import { Store, newId } from './store.js?v=20260917f';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917f';
-import { renderTrackForm } from './trackForm.js?v=20260917f';
-import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917f';
+import { Store, newId } from './store.js?v=20260917g';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917g';
+import { renderTrackForm } from './trackForm.js?v=20260917g';
+import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917g';
 
 // Spotify's actual recommendation/audio-features endpoints are blocked for
 // any developer app created after Nov 2024 (403, permanently, short of
@@ -418,13 +418,13 @@ export function renderLiveTab(container) {
       if (entry.upNow) row.style.background = 'var(--accent-soft)';
       const planned = entry.afterVinylId ? Store.getPlannedSpotifyFor(entry.afterVinylId) : null;
 
-      function fillRow(pick, { loading = false } = {}) {
+      function fillRow(pick, { loading = false, errorMsg = null } = {}) {
         const placeholder = loading ? 'TBD — finding a match…' : 'TBD — no auto-match, tap Change to search';
         row.innerHTML = `
           <span class="badge spotify">SPOTIFY</span>
           <div class="track-meta">
             <div class="title">${pick ? pick.title : placeholder}</div>
-            <div class="sub">${pick ? `${pick.artist}${pick.album ? ` &middot; ${pick.album}` : ''}` : ''}${entry.upNow ? ' (bridging next, see above)' : ''}</div>
+            <div class="sub">${pick ? `${pick.artist}${pick.album ? ` &middot; ${pick.album}` : ''}` : (errorMsg || '')}${entry.upNow ? ' (bridging next, see above)' : ''}</div>
           </div>
         `;
         const changeBtn = document.createElement('button');
@@ -498,15 +498,20 @@ export function renderLiveTab(container) {
           // limits, which was intermittently starving every gap after the
           // first even once the indexing above is correct.
           fetchChain = fetchChain.then(async () => {
+            const bt2 = getBridgeTarget(entry.leftVinyl, entry.rightVinyl, Store.getSettings());
+            const query = buildAutoQuery(bt2);
             try {
-              const bt2 = getBridgeTarget(entry.leftVinyl, entry.rightVinyl, Store.getSettings());
-              const results = await searchTracks(buildAutoQuery(bt2), 1);
+              const results = await searchTracks(query, 1);
               const pick = results[0] || null;
-              if (pick) Store.setPlannedSpotifyFor(entry.afterVinylId, pick);
-              fillRow(pick);
+              if (pick) {
+                Store.setPlannedSpotifyFor(entry.afterVinylId, pick);
+                fillRow(pick);
+              } else {
+                fillRow(null, { errorMsg: `0 results for "${query}"` });
+              }
             } catch (e) {
               console.warn('Bridge auto-search failed for gap', entry.afterVinylId, e);
-              fillRow(null);
+              fillRow(null, { errorMsg: e.message });
             }
           });
         }

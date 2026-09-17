@@ -1,8 +1,8 @@
-import { Store, newId } from './store.js?v=20260917h';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917h';
-import { renderTrackForm } from './trackForm.js?v=20260917h';
-import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917h';
-import { createTapTempo } from './tapTempo.js?v=20260917h';
+import { Store, newId } from './store.js?v=20260917i';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917i';
+import { renderTrackForm } from './trackForm.js?v=20260917i';
+import { searchTracks, searchAlbums, getAlbumTracks, isLoggedIn } from './spotify.js?v=20260917i';
+import { createTapTempo } from './tapTempo.js?v=20260917i';
 
 // Spotify's actual recommendation/audio-features endpoints are blocked for
 // any developer app created after Nov 2024 (403, permanently, short of
@@ -104,6 +104,15 @@ export function renderLiveTab(container) {
     return bits.length ? `${t.title} &middot; ${bits.join(' ')}` : t.title;
   }
 
+  // A default (untapped) BPM means its position in the tempo-flow plan is
+  // just a placeholder, not a real transition fit - flag it so it's never
+  // mistaken for a considered placement.
+  function bpmLabel(t) {
+    return t.bpmEstimated
+      ? `<span style="color:var(--accent);">&#9888; ${t.bpm} BPM (est. - tap tempo for a real transition fit)</span>`
+      : `${t.bpm ?? '?'} BPM`;
+  }
+
   function renderGuestCrate() {
     const listEl = container.querySelector('#guest-crate-list');
     const guests = Store.getTracks()
@@ -123,7 +132,7 @@ export function renderLiveTab(container) {
         <div class="vinyl-disc">&#9835;</div>
         <div class="track-meta">
           <div class="title">${t.artist} ${t.played ? '&#9989; played' : ''}</div>
-          <div class="sub">${trackLine(t)} &middot; ${t.bpm ?? '?'} BPM &middot; energy ${t.energy}</div>
+          <div class="sub">${trackLine(t)} &middot; ${bpmLabel(t)} &middot; energy ${t.energy}</div>
         </div>
       `;
       listEl.appendChild(row);
@@ -149,15 +158,18 @@ export function renderLiveTab(container) {
       <button type="button" class="secondary" id="ve-cancel">Cancel</button></div>
     `;
     let editedBpm = track.bpm ?? null;
+    let bpmConfirmed = false; // true once the DJ actually tapped/typed a tempo this round
     const veTapTempo = createTapTempo((bpm) => {
       if (!bpm) return;
       editedBpm = bpm;
+      bpmConfirmed = true;
       mountEl.querySelector('#ve-bpm-readout').textContent = `${bpm} BPM`;
       mountEl.querySelector('#ve-bpm-manual').value = bpm;
     });
     mountEl.querySelector('#ve-tap').addEventListener('click', () => veTapTempo.tap());
     mountEl.querySelector('#ve-bpm-manual').addEventListener('input', (e) => {
       editedBpm = e.target.value ? Number(e.target.value) : null;
+      bpmConfirmed = true;
     });
     mountEl.querySelector('#ve-lookup').addEventListener('click', async () => {
       const resultsEl = mountEl.querySelector('#ve-lookup-results');
@@ -188,7 +200,12 @@ export function renderLiveTab(container) {
       const title = mountEl.querySelector('#ve-title').value.trim() || "(DJ's choice)";
       const tn = mountEl.querySelector('#ve-tracknum').value.trim();
       const newBpm = editedBpm ?? track.bpm;
-      const updated = Store.updateTrack(track.id, { title, trackNumber: tn ? Number(tn) : null, bpm: newBpm });
+      const updated = Store.updateTrack(track.id, {
+        title,
+        trackNumber: tn ? Number(tn) : null,
+        bpm: newBpm,
+        bpmEstimated: bpmConfirmed ? false : track.bpmEstimated,
+      });
       // A changed tempo can change where this track belongs in the plan -
       // pull it out and re-insert at its new best slot rather than leaving
       // it wherever it happened to land under the old (often default) BPM.
@@ -423,7 +440,7 @@ export function renderLiveTab(container) {
           ${t.guestRequested ? '<span class="badge guest">guest</span>' : ''}
           <div class="track-meta">
             <div class="title">${t.artist}</div>
-            <div class="sub">${trackLine(t)}</div>
+            <div class="sub">${trackLine(t)} &middot; ${bpmLabel(t)}</div>
           </div>
         `;
         const changeBtn = document.createElement('button');

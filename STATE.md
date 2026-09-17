@@ -74,6 +74,15 @@ this file only tracks current status and what's still open.
       forever even after a lookahead search failed/errored - now
       distinguishes "still loading" from "gave up, tap Change," and logs
       the actual error to the console for diagnosis.
+- [x] Investigated "guest track missing from Full Set" - it wasn't actually
+      missing (verified via headless test: correctly tempo-sorted at its
+      100 BPM default, between the two records that BPM falls between).
+      The real problem: an untapped default BPM makes its plan position a
+      pure guess, not a real transition fit, and that wasn't visible.
+      Added a `bpmEstimated` flag (set on save, cleared once the DJ taps or
+      types a real tempo) and a "&#9888; N BPM (est.)" warning wherever BPM
+      shows - Guest Crate, Crate Builder's plan list, and Full Set - so an
+      unconfirmed placement is never mistaken for a considered one.
 - [x] Changed behavior per explicit user ask: picking a Spotify search
       result in the add-track form now saves the track immediately (no
       separate "now click Add" step at all - the earlier "make the message

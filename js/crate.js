@@ -1,6 +1,6 @@
-import { Store } from './store.js?v=20260917h';
-import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260917h';
-import { renderTrackForm } from './trackForm.js?v=20260917h';
+import { Store } from './store.js?v=20260917i';
+import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260917i';
+import { renderTrackForm } from './trackForm.js?v=20260917i';
 
 export function renderCrateTab(container) {
   container.innerHTML = `
@@ -49,10 +49,13 @@ export function renderCrateTab(container) {
       if (t.trackNumber != null) albumBits.push(`#${t.trackNumber}`);
       const row = document.createElement('div');
       row.className = 'track-row';
+      const bpmText = t.bpmEstimated
+        ? `<span style="color:var(--accent);">&#9888; ${t.bpm} BPM (est.)</span>`
+        : `${t.bpm ?? '?'} BPM`;
       row.innerHTML = `
         <div class="track-meta">
           <div class="title">${idx + 1}. ${t.artist} — ${t.title} ${t.played ? '&#9989;' : ''}</div>
-          <div class="sub">${albumBits.length ? `${albumBits.join(' ')} &middot; ` : ''}${t.bpm ?? '?'} BPM &middot; energy ${t.energy}
+          <div class="sub">${albumBits.length ? `${albumBits.join(' ')} &middot; ` : ''}${bpmText} &middot; energy ${t.energy}
             ${t.guestRequested ? '<span class="badge guest">guest</span>' : ''}
           </div>
         </div>

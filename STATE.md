@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-09-18_
+_Last updated: 2026-09-18 (Reset Set added)_
 
 ## Current status
 
@@ -154,6 +154,20 @@ itself, since that's where the user said they actually spend their time.
 Verified end-to-end (real distinct artists pulled, BPMs tracking the
 curve, Full Set/Next-up immediately reflecting the new plan) and the full
 existing test suite re-run clean against the refactor.
+
+## Reset Set on Live Set
+
+Added a fourth quick-action button next to Save/Open/Create: **"🔄 Reset set"**.
+Confirms first (`confirm()`, since this can't be undone), then clears every
+track/plan/live-progress via the existing `Store.resetSetData()` (same call
+Settings' own reset button uses — its contract of leaving Spotify login and
+Saved sets untouched is unchanged), plus explicitly clears the mood lever's
+`setStartedAt`/`leverOverride` and re-enables `autoDrift` so the lever shows
+"Not started" again instead of stale drift math from the cleared set. Saved
+sets, Spotify login, and Set-arc lever *bounds* (leverStart/End in Settings)
+are all preserved — only the live working set resets. Verified end-to-end
+(headless): tracks 2→0, planOrder 2→0, setStartedAt cleared to null, mood
+arc bounds preserved.
 
 ## Open threads / next steps
 

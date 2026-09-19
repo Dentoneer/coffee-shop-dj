@@ -1,12 +1,12 @@
-import { Store, newId } from './store.js?v=20260918d';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260918d';
-import { renderTrackForm } from './trackForm.js?v=20260918d';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20260918d';
-import { createTapTempo } from './tapTempo.js?v=20260918d';
-import { syncPlaylists } from './spotifySync.js?v=20260918d';
-import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=20260918d';
-import { renderMoodWave, PRESETS } from './moodWave.js?v=20260918d';
-import { generateCrate } from './crateGenerator.js?v=20260918d';
+import { Store, newId } from './store.js?v=20260918e';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260918e';
+import { renderTrackForm } from './trackForm.js?v=20260918e';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20260918e';
+import { createTapTempo } from './tapTempo.js?v=20260918e';
+import { syncPlaylists } from './spotifySync.js?v=20260918e';
+import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=20260918e';
+import { renderMoodWave, PRESETS } from './moodWave.js?v=20260918e';
+import { generateCrate } from './crateGenerator.js?v=20260918e';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no
@@ -82,10 +82,12 @@ export function renderLiveTab(container) {
         <button type="button" class="secondary" id="toggle-save-set">&#128190; Save this set</button>
         <button type="button" class="secondary" id="toggle-open-set">&#128193; Open set</button>
         <button type="button" class="secondary" id="toggle-create-set">&#10024; Create set</button>
+        <button type="button" class="secondary" id="reset-set-btn">&#128260; Reset set</button>
       </div>
       <div id="save-set-form" style="margin-top:0.5rem;"></div>
       <div id="open-set-form" style="margin-top:0.5rem;"></div>
       <div id="create-set-form" style="margin-top:0.5rem;"></div>
+      <p class="hint" id="reset-set-status" style="margin-top:0.3rem;"></p>
     </div>
 
     <div class="card" id="turn-card"></div>
@@ -1032,6 +1034,23 @@ export function renderLiveTab(container) {
         statusEl.textContent = `Couldn't build the crate: ${e.message}`;
       }
     });
+  });
+
+  container.querySelector('#reset-set-btn').addEventListener('click', () => {
+    closeSaveSetForm();
+    closeOpenSetForm();
+    closeCreateSetForm();
+    if (!confirm('Reset the current set? This clears every track, the plan, and live progress (mood lever back to '
+      + 'not-started). Your Spotify login and Saved sets are untouched. This can\'t be undone.')) return;
+    Store.resetSetData();
+    // A clean slate means the mood lever timer resets too, not just the
+    // tracks - resetSetData() alone leaves setStartedAt stale since that
+    // lives in settings (which resetSetData deliberately preserves for
+    // the Settings-tab version of this button).
+    Store.updateSettings({ setStartedAt: null, leverOverride: null, autoDrift: true });
+    container.querySelector('#reset-set-status').textContent = 'Set reset — ready for a fresh crate.';
+    refreshLever();
+    refreshTurn();
   });
 
   refreshLever();

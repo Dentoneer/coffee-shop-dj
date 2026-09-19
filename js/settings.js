@@ -1,7 +1,7 @@
-import { Store } from './store.js?v=20260918d';
-import { login, logout, isLoggedIn, handleRedirect, parsePlaylistId, getPlaylistRawSample } from './spotify.js?v=20260918d';
-import { syncPlaylists } from './spotifySync.js?v=20260918d';
-import { summaryLine } from './savedSets.js?v=20260918d';
+import { Store } from './store.js?v=20260918e';
+import { login, logout, isLoggedIn, handleRedirect, parsePlaylistId, getPlaylistRawSample } from './spotify.js?v=20260918e';
+import { syncPlaylists } from './spotifySync.js?v=20260918e';
+import { summaryLine } from './savedSets.js?v=20260918e';
 
 export function renderSettingsTab(container) {
   const settings = Store.getSettings();

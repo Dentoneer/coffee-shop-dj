@@ -2,7 +2,7 @@
 // that's the point of PKCE for a public static site. Used only for catalog
 // search (track lookup, album art); no playback control, no audio-features.
 
-import { Store } from './store.js?v=20260918d';
+import { Store } from './store.js?v=20260918e';
 
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';

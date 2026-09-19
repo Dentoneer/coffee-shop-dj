@@ -1,10 +1,10 @@
-import { Store, newId } from './store.js?v=20260918b';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260918b';
-import { renderTrackForm } from './trackForm.js?v=20260918b';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20260918b';
-import { createTapTempo } from './tapTempo.js?v=20260918b';
-import { syncPlaylists } from './spotifySync.js?v=20260918b';
-import { saveCurrentSet } from './savedSets.js?v=20260918b';
+import { Store, newId } from './store.js?v=20260918c';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260918c';
+import { renderTrackForm } from './trackForm.js?v=20260918c';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20260918c';
+import { createTapTempo } from './tapTempo.js?v=20260918c';
+import { syncPlaylists } from './spotifySync.js?v=20260918c';
+import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=20260918c';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no
@@ -76,8 +76,12 @@ export function renderLiveTab(container) {
     </div>
 
     <div class="card" style="padding:0.5rem 0.8rem;">
-      <button type="button" class="secondary" id="toggle-save-set">&#128190; Save this set</button>
+      <div class="row">
+        <button type="button" class="secondary" id="toggle-save-set">&#128190; Save this set</button>
+        <button type="button" class="secondary" id="toggle-open-set">&#128193; Open set</button>
+      </div>
       <div id="save-set-form" style="margin-top:0.5rem;"></div>
+      <div id="open-set-form" style="margin-top:0.5rem;"></div>
     </div>
 
     <div class="card" id="turn-card"></div>
@@ -518,6 +522,9 @@ export function renderLiveTab(container) {
       future.push({ kind: 'spotify-gap', afterVinylId: t.id, leftVinyl: t, rightVinyl: unplayedVinyl[idx + 1] || null });
     });
     if (future.length) future[0].upNow = true;
+    // Ordered list of every gap's afterVinylId, so a gap can find its
+    // immediate neighbor to swap planned picks with (see swapPlannedSpotify).
+    const gapOrder = future.filter((e) => e.kind === 'spotify-gap').map((e) => e.afterVinylId);
 
     listEl.innerHTML = '';
     let spotifyGapCount = 0; // counts only spotify-gap entries, not vinyl rows
@@ -575,6 +582,23 @@ export function renderLiveTab(container) {
       const newOrder = planOrder.slice();
       [newOrder[idx], newOrder[swapWith]] = [newOrder[swapWith], newOrder[idx]];
       Store.savePlanOrder(newOrder);
+      refreshTurn();
+    }
+
+    // Moves a Spotify slot by swapping its planned pick with the adjacent
+    // gap's (up = earlier in the set, down = later) - alternation is
+    // strict so a Spotify slot can't change WHICH gap it's in, only
+    // which song is scheduled there. Missing/TBD picks swap too (a TBD
+    // slot just "moves" as an empty slot).
+    function swapPlannedSpotify(afterVinylId, delta) {
+      const idx = gapOrder.indexOf(afterVinylId);
+      const otherIdx = idx + delta;
+      if (idx === -1 || otherIdx < 0 || otherIdx >= gapOrder.length) return;
+      const otherId = gapOrder[otherIdx];
+      const pickA = Store.getPlannedSpotifyFor(afterVinylId);
+      const pickB = Store.getPlannedSpotifyFor(otherId);
+      if (pickB) Store.setPlannedSpotifyFor(afterVinylId, pickB); else Store.clearPlannedSpotifyFor(afterVinylId);
+      if (pickA) Store.setPlannedSpotifyFor(otherId, pickA); else Store.clearPlannedSpotifyFor(otherId);
       refreshTurn();
     }
 
@@ -705,6 +729,33 @@ export function renderLiveTab(container) {
             <div class="sub">${pick ? `${pick.artist}${pick.album ? ` &middot; ${pick.album}` : ''}` : (errorMsg || '')}${sourceTag}${entry.upNow ? ' (bridging next, see above)' : ''}</div>
           </div>
         `;
+        // Same up/down move affordance as vinyl rows - swaps this slot's
+        // planned pick with the neighboring gap's, so a Spotify song can
+        // move earlier/later in the set just like a vinyl can.
+        if (entry.afterVinylId) {
+          const moveWrap = document.createElement('span');
+          moveWrap.style.display = 'flex';
+          moveWrap.style.flexDirection = 'column';
+          moveWrap.style.flex = 'none';
+          const upBtn = document.createElement('button');
+          upBtn.type = 'button';
+          upBtn.className = 'secondary';
+          upBtn.textContent = '▲';
+          upBtn.style.padding = '0.1rem 0.4rem';
+          upBtn.style.fontSize = '0.7rem';
+          upBtn.addEventListener('click', () => swapPlannedSpotify(entry.afterVinylId, -1));
+          const downBtn = document.createElement('button');
+          downBtn.type = 'button';
+          downBtn.className = 'secondary';
+          downBtn.textContent = '▼';
+          downBtn.style.padding = '0.1rem 0.4rem';
+          downBtn.style.fontSize = '0.7rem';
+          downBtn.style.marginTop = '0.2rem';
+          downBtn.addEventListener('click', () => swapPlannedSpotify(entry.afterVinylId, 1));
+          moveWrap.appendChild(upBtn);
+          moveWrap.appendChild(downBtn);
+          row.insertBefore(moveWrap, row.querySelector('.track-meta'));
+        }
         const shuffleBtn = document.createElement('button');
         shuffleBtn.type = 'button';
         shuffleBtn.className = 'secondary';
@@ -869,13 +920,17 @@ export function renderLiveTab(container) {
 
   const saveSetToggleBtn = container.querySelector('#toggle-save-set');
   const saveSetFormEl = container.querySelector('#save-set-form');
+  const openSetToggleBtn = container.querySelector('#toggle-open-set');
+  const openSetFormEl = container.querySelector('#open-set-form');
   let saveSetFormShown = false;
+  let openSetFormShown = false;
+
+  function closeSaveSetForm() { saveSetFormShown = false; saveSetFormEl.innerHTML = ''; }
+  function closeOpenSetForm() { openSetFormShown = false; openSetFormEl.innerHTML = ''; }
+
   saveSetToggleBtn.addEventListener('click', () => {
-    if (saveSetFormShown) {
-      saveSetFormShown = false;
-      saveSetFormEl.innerHTML = '';
-      return;
-    }
+    closeOpenSetForm();
+    if (saveSetFormShown) { closeSaveSetForm(); return; }
     saveSetFormShown = true;
     const defaultName = `Set — ${new Date().toLocaleDateString()}`;
     saveSetFormEl.innerHTML = `
@@ -886,16 +941,44 @@ export function renderLiveTab(container) {
       </div>
       <p class="hint" id="ss-status"></p>
     `;
-    saveSetFormEl.querySelector('#ss-cancel').addEventListener('click', () => {
-      saveSetFormShown = false;
-      saveSetFormEl.innerHTML = '';
-    });
+    saveSetFormEl.querySelector('#ss-cancel').addEventListener('click', closeSaveSetForm);
     saveSetFormEl.querySelector('#ss-save').addEventListener('click', () => {
       const name = saveSetFormEl.querySelector('#ss-name').value;
       const set = saveCurrentSet(name);
       saveSetFormEl.innerHTML = `<p class="hint">Saved as "${set.name}". See it any time under Settings → Saved sets.</p>`;
       saveSetFormShown = false;
     });
+  });
+
+  openSetToggleBtn.addEventListener('click', () => {
+    closeSaveSetForm();
+    if (openSetFormShown) { closeOpenSetForm(); return; }
+    openSetFormShown = true;
+    const sets = Store.getSavedSets();
+    if (sets.length === 0) {
+      openSetFormEl.innerHTML = '<p class="hint">Nothing saved yet — use "Save this set" first.</p>';
+      return;
+    }
+    openSetFormEl.innerHTML = sets.map((set) => `
+      <div class="track-row">
+        <div class="track-meta">
+          <div class="title">${set.name}</div>
+          <div class="sub">${summaryLine(set)}</div>
+        </div>
+        <button type="button" class="secondary" data-load="${set.id}">Load</button>
+      </div>
+    `).join('') + '<button type="button" class="secondary" id="os-cancel" style="margin-top:0.4rem;">Cancel</button>';
+    openSetFormEl.querySelectorAll('[data-load]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const set = sets.find((s) => s.id === btn.dataset.load);
+        if (!confirm(`Load "${set.name}"? This replaces your current live set with a fresh (unplayed) copy of it. This can't be undone.`)) return;
+        loadSavedSet(set);
+        closeOpenSetForm();
+        refreshLever();
+        refreshTurn();
+      });
+    });
+    openSetFormEl.querySelector('#os-cancel').addEventListener('click', closeOpenSetForm);
   });
 
   refreshLever();

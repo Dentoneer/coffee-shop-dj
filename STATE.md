@@ -118,6 +118,30 @@ verifying every derived stat, the trim/fallback-name logic, and
 save/retrieve/delete round-tripping. Verified visually end-to-end
 (save from Live Set -> appears in Settings -> tracks expand correctly).
 
+## Open Set + Spotify slots are now movable too
+
+- **Open set** (Live Set, next to Save): lists every saved set with its
+  summary line and a "Load" button (confirms first — replaces the live
+  set). `loadSavedSet()` in `js/savedSets.js` restores tracks/planOrder/
+  mood arc as a **fresh, unplayed** crate (not a literal resume of the old
+  session) — every track's `played`/`playedAt` reset, `setStartedAt`
+  cleared, stale `plannedSpotify`/live-state cleared. Loading never
+  deletes the saved copy. Covered by a Node test that mutates the live
+  set to something unrelated first, then asserts `loadSavedSet` correctly
+  overwrites every piece of state (including the "fresh, not resumed"
+  behavior) without touching the saved library.
+- **Spotify rows are now movable**, matching vinyl's ▲/▼ buttons: since
+  alternation is strict, a Spotify slot can't change *which* gap it's in,
+  only *which song* is scheduled there — so moving one swaps its planned
+  pick (`Store.plannedSpotify`) with the adjacent gap's, correctly
+  handling a TBD (empty) neighbor (the moved pick fills it; the vacated
+  slot becomes TBD, not a stale duplicate). New `swapPlannedSpotify()` in
+  `js/liveset.js`, keyed off a precomputed `gapOrder` array (every
+  spotify-gap's `afterVinylId`, in sequence). Verified end-to-end
+  (swap + the live turn card correctly picking up the new order) and the
+  underlying swap algorithm covered by its own Node test including the
+  TBD-neighbor edge case.
+
 ## Open threads / next steps
 
 - [ ] A few `data/collection.json` entries carry a `"note"` field flagging

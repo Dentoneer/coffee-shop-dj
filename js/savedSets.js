@@ -4,7 +4,7 @@
 // keep changing under the DJ's feet - saving one is a point-in-time copy,
 // never a live link.
 
-import { Store, newId } from './store.js?v=20260918b';
+import { Store, newId } from './store.js?v=20260918c';
 
 /** Builds a full snapshot of the current set under `name`. Does not touch the live set. */
 export function buildSnapshot(name) {
@@ -53,6 +53,29 @@ export function buildSnapshot(name) {
 
 export function saveCurrentSet(name) {
   return Store.addSavedSet(buildSnapshot(name));
+}
+
+/**
+ * Loads a saved set back into the live set, as a fresh crate ready to
+ * play from the top (every track un-played, no live-progress carried
+ * over) - this is "reuse this set list," not "resume that old night."
+ * Overwrites the current live tracks/plan/mood arc; caller should confirm
+ * with the DJ first since this discards whatever's currently live.
+ */
+export function loadSavedSet(set) {
+  const tracks = set.tracks.map((t) => ({ ...t, played: false, playedAt: null }));
+  Store.saveTracks(tracks);
+  Store.savePlanOrder(set.planOrder);
+  Store.updateSettings({
+    leverStart: set.leverStart,
+    leverEnd: set.leverEnd,
+    setDurationMinutes: set.plannedDurationMinutes,
+    setStartedAt: null,
+    leverOverride: null,
+    autoDrift: true,
+  });
+  Store.clearAllPlannedSpotify();
+  Store.saveLiveState({ lastPlayedTrackId: null, turn: 'vinyl' });
 }
 
 function moodWord(v) {

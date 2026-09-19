@@ -141,6 +141,9 @@ export const Store = {
     delete map[afterVinylId];
     writeJSON(KEYS.plannedSpotify, map);
   },
+  clearAllPlannedSpotify() {
+    localStorage.removeItem(KEYS.plannedSpotify);
+  },
 
   // A library of named, dated snapshots of past/current sets - separate
   // from the live tracks/planOrder, which keep changing under the DJ's

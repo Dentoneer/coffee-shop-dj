@@ -1,6 +1,7 @@
-import { Store } from './store.js?v=20260918a';
-import { login, logout, isLoggedIn, handleRedirect, parsePlaylistId, getPlaylistRawSample } from './spotify.js?v=20260918a';
-import { syncPlaylists } from './spotifySync.js?v=20260918a';
+import { Store } from './store.js?v=20260918b';
+import { login, logout, isLoggedIn, handleRedirect, parsePlaylistId, getPlaylistRawSample } from './spotify.js?v=20260918b';
+import { syncPlaylists } from './spotifySync.js?v=20260918b';
+import { summaryLine } from './savedSets.js?v=20260918b';
 
 export function renderSettingsTab(container) {
   const settings = Store.getSettings();
@@ -32,6 +33,13 @@ export function renderSettingsTab(container) {
       <label>Mood lever end</label>
       <input type="number" id="s-lever-end" min="1" max="5" step="0.1" value="${settings.leverEnd}" />
       <div style="margin-top:0.6rem"><button type="button" id="s-save-arc">Save</button></div>
+    </div>
+
+    <div class="card">
+      <h3>Saved sets</h3>
+      <p class="hint">Named snapshots you've saved from Live Set ("&#128190; Save this set") — name, date, mood
+        arc, duration, and a summary of what played. Saving never touches your current live set.</p>
+      <div id="saved-sets-list"></div>
     </div>
 
     <div class="card">
@@ -108,6 +116,59 @@ export function renderSettingsTab(container) {
       statusEl.textContent = `${status.tracks.length} track(s) synced OK, but ${failed.length} playlist(s) failed: ${failed.map((p) => `${p.name || p.id} (${p.error})`).join(', ')}. Check the link(s) are correct.`;
     }
   });
+
+  function renderSavedSets() {
+    const listEl = container.querySelector('#saved-sets-list');
+    const sets = Store.getSavedSets();
+    if (sets.length === 0) {
+      listEl.innerHTML = '<p class="hint">Nothing saved yet.</p>';
+      return;
+    }
+    listEl.innerHTML = '';
+    sets.forEach((set) => {
+      const row = document.createElement('div');
+      row.className = 'card';
+      row.style.background = 'var(--accent-soft)';
+      row.innerHTML = `
+        <div class="row" style="align-items:flex-start;">
+          <div style="flex:1;">
+            <div class="title" style="font-weight:bold;">${set.name}</div>
+            <div class="hint">${summaryLine(set)}</div>
+            ${set.artists.length ? `<div class="hint">${set.artists.slice(0, 8).join(', ')}${set.artists.length > 8 ? ` +${set.artists.length - 8} more` : ''}</div>` : ''}
+          </div>
+          <div style="flex:none;display:flex;flex-direction:column;gap:0.3rem;">
+            <button type="button" class="secondary" data-view="${set.id}">View tracks</button>
+            <button type="button" class="secondary" data-delete="${set.id}">Delete</button>
+          </div>
+        </div>
+        <div id="ss-view-${set.id}"></div>
+      `;
+      listEl.appendChild(row);
+    });
+
+    listEl.querySelectorAll('[data-view]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const set = sets.find((s) => s.id === btn.dataset.view);
+        const viewEl = listEl.querySelector(`#ss-view-${set.id}`);
+        if (viewEl.innerHTML) { viewEl.innerHTML = ''; return; }
+        viewEl.innerHTML = set.planOrder.map((id, i) => {
+          const t = set.tracks.find((tr) => tr.id === id) || set.tracks.find((tr) => tr.source === 'vinyl');
+          if (!t) return '';
+          return `<div class="track-row"><div class="track-meta"><div class="title">${i + 1}. ${t.artist} — ${t.title}</div>
+            <div class="sub">${t.album || ''}${t.bpm != null ? ` &middot; ${t.bpm} BPM` : ''} &middot; energy ${t.energy}</div></div></div>`;
+        }).join('') || '<p class="hint">No vinyl plan recorded for this set.</p>';
+      });
+    });
+    listEl.querySelectorAll('[data-delete]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const set = sets.find((s) => s.id === btn.dataset.delete);
+        if (!confirm(`Delete saved set "${set.name}"? This can't be undone.`)) return;
+        Store.deleteSavedSet(set.id);
+        renderSavedSets();
+      });
+    });
+  }
+  renderSavedSets();
 
   container.querySelector('#s-save-arc').addEventListener('click', () => {
     Store.updateSettings({

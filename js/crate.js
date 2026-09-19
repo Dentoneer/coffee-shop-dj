@@ -1,7 +1,7 @@
-import { Store } from './store.js?v=20260918a';
-import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260918a';
-import { renderTrackForm } from './trackForm.js?v=20260918a';
-import { renderMoodWave, sampleEnergyAtFraction, energyToBpm, PRESETS } from './moodWave.js?v=20260918a';
+import { Store } from './store.js?v=20260918b';
+import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260918b';
+import { renderTrackForm } from './trackForm.js?v=20260918b';
+import { renderMoodWave, sampleEnergyAtFraction, energyToBpm, PRESETS } from './moodWave.js?v=20260918b';
 
 let cachedCollection = null;
 async function loadCollection() {

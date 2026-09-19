@@ -9,6 +9,7 @@ const KEYS = {
   spotifyPkce: 'csdj.spotifyPkceVerifier',
   liveState: 'csdj.liveState',
   plannedSpotify: 'csdj.plannedSpotify',
+  savedSets: 'csdj.savedSets',
 };
 
 const DEFAULT_SETTINGS = {
@@ -141,6 +142,23 @@ export const Store = {
     writeJSON(KEYS.plannedSpotify, map);
   },
 
+  // A library of named, dated snapshots of past/current sets - separate
+  // from the live tracks/planOrder, which keep changing under the DJ's
+  // feet. Saving one never touches the live set.
+  getSavedSets() {
+    return readJSON(KEYS.savedSets, []);
+  },
+  addSavedSet(set) {
+    const sets = Store.getSavedSets();
+    sets.unshift(set); // newest first
+    writeJSON(KEYS.savedSets, sets);
+    return set;
+  },
+  deleteSavedSet(id) {
+    const sets = Store.getSavedSets().filter((s) => s.id !== id);
+    writeJSON(KEYS.savedSets, sets);
+  },
+
   exportAll() {
     return {
       tracks: Store.getTracks(),
@@ -148,6 +166,7 @@ export const Store = {
       settings: Store.getSettings(),
       liveState: Store.getLiveState(),
       plannedSpotify: Store.getPlannedSpotifyMap(),
+      savedSets: Store.getSavedSets(),
       exportedAt: new Date().toISOString(),
     };
   },
@@ -157,6 +176,7 @@ export const Store = {
     if (data.settings) Store.saveSettings(data.settings);
     if (data.liveState) Store.saveLiveState(data.liveState);
     if (data.plannedSpotify) writeJSON(KEYS.plannedSpotify, data.plannedSpotify);
+    if (data.savedSets) writeJSON(KEYS.savedSets, data.savedSets);
   },
 };
 

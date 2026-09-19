@@ -1,9 +1,10 @@
-import { Store, newId } from './store.js?v=20260918a';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260918a';
-import { renderTrackForm } from './trackForm.js?v=20260918a';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20260918a';
-import { createTapTempo } from './tapTempo.js?v=20260918a';
-import { syncPlaylists } from './spotifySync.js?v=20260918a';
+import { Store, newId } from './store.js?v=20260918b';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260918b';
+import { renderTrackForm } from './trackForm.js?v=20260918b';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20260918b';
+import { createTapTempo } from './tapTempo.js?v=20260918b';
+import { syncPlaylists } from './spotifySync.js?v=20260918b';
+import { saveCurrentSet } from './savedSets.js?v=20260918b';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no
@@ -72,6 +73,11 @@ export function renderLiveTab(container) {
         <button type="button" class="secondary" id="lever-start-set" style="flex:none;padding:0.3rem 0.6rem;font-size:0.8rem;">Start</button>
       </div>
       <p class="hint" id="lever-hint" style="margin:0.2rem 0 0;font-size:0.75rem;"></p>
+    </div>
+
+    <div class="card" style="padding:0.5rem 0.8rem;">
+      <button type="button" class="secondary" id="toggle-save-set">&#128190; Save this set</button>
+      <div id="save-set-form" style="margin-top:0.5rem;"></div>
     </div>
 
     <div class="card" id="turn-card"></div>
@@ -859,6 +865,37 @@ export function renderLiveTab(container) {
       },
     });
     scheduleGuestFormAutoClose();
+  });
+
+  const saveSetToggleBtn = container.querySelector('#toggle-save-set');
+  const saveSetFormEl = container.querySelector('#save-set-form');
+  let saveSetFormShown = false;
+  saveSetToggleBtn.addEventListener('click', () => {
+    if (saveSetFormShown) {
+      saveSetFormShown = false;
+      saveSetFormEl.innerHTML = '';
+      return;
+    }
+    saveSetFormShown = true;
+    const defaultName = `Set — ${new Date().toLocaleDateString()}`;
+    saveSetFormEl.innerHTML = `
+      <input type="text" id="ss-name" value="${defaultName}" />
+      <div class="row" style="margin-top:0.4rem;">
+        <button type="button" id="ss-save">Save</button>
+        <button type="button" class="secondary" id="ss-cancel">Cancel</button>
+      </div>
+      <p class="hint" id="ss-status"></p>
+    `;
+    saveSetFormEl.querySelector('#ss-cancel').addEventListener('click', () => {
+      saveSetFormShown = false;
+      saveSetFormEl.innerHTML = '';
+    });
+    saveSetFormEl.querySelector('#ss-save').addEventListener('click', () => {
+      const name = saveSetFormEl.querySelector('#ss-name').value;
+      const set = saveCurrentSet(name);
+      saveSetFormEl.innerHTML = `<p class="hint">Saved as "${set.name}". See it any time under Settings → Saved sets.</p>`;
+      saveSetFormShown = false;
+    });
   });
 
   refreshLever();

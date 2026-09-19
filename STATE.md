@@ -99,6 +99,25 @@ loaded the same fixed 13-track JSON) with a generator:
 - `data/tonight-crate.json` still exists but is no longer linked from any
   button - kept as a reference/fallback, not part of the active flow.
 
+## Save Set
+
+New `js/savedSets.js`: `buildSnapshot(name)` captures a full point-in-time
+copy of the current set - tracks, planOrder, mood arc (leverStart/End),
+planned vs. actual duration (derived from `setStartedAt` and the last
+`playedAt`), vinyl/Spotify/played/guest counts, BPM range, aggregated
+flavor tags, and the artist list. `saveCurrentSet(name)` persists it via
+new `Store.addSavedSet`/`getSavedSets`/`deleteSavedSet` (own localStorage
+key, included in Export/Import) - saving never touches the live set.
+- Live Set: "💾 Save this set" button (top of the tab) opens an inline
+  name field, defaulting to "Set — <date>".
+- Settings: new "Saved sets" card lists every saved set with a one-line
+  summary (`summaryLine()`), an expandable "View tracks" (full plan with
+  artist/album/BPM/energy), and "Delete" (confirms first).
+Covered by a Node test with a realistic 3-track/2-source/1-guest set,
+verifying every derived stat, the trim/fallback-name logic, and
+save/retrieve/delete round-tripping. Verified visually end-to-end
+(save from Live Set -> appears in Settings -> tracks expand correctly).
+
 ## Open threads / next steps
 
 - [ ] A few `data/collection.json` entries carry a `"note"` field flagging

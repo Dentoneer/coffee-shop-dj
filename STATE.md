@@ -1,231 +1,92 @@
 # State
 
-_Last updated: 2026-09-17_
+_Last updated: 2026-09-18_
 
 ## Current status
 
-Live and in active use for tonight's set. **https://dentoneer.github.io/coffee-shop-dj/**
+Live and in active use across multiple sets now. **https://dentoneer.github.io/coffee-shop-dj/**
 (repo `Dentoneer/coffee-shop-dj`, GitHub Pages from `master` root, auto-deploys on push).
 
-Core pieces all working: tempo-ordered vinyl plan (Crate Builder), Spotify
-PKCE login + search, Live Set's turn-based flow, a full personal vinyl
-collection (`data/collection.json`, 189 records) browsable in Vinyl Corner,
-and tonight's curated 13-record starting set (handed to the user as a
-Crate Builder bulk-import JSON, with real researched track numbers/titles
-and web-search sources — see git log / conversation for that list).
+All core pieces working end-to-end, including a real logged-in Spotify session
+(confirmed by the user across several rounds of live debugging): tempo-ordered
+vinyl plan with drag/arrow/shuffle reordering, Spotify PKCE login + search +
+the DJ's own playlists synced in, Live Set's turn-based flow with per-row
+Change/Shuffle on every slot, a full personal vinyl collection (`data/collection.json`,
+189 records) browsable in Vinyl Corner, and a matching **Spotify Corner** tab
+browsing every track synced from the DJ's playlists. Cyberpunk colorwave visual
+theme throughout.
 
-Detailed history of what was built and fixed each round is in git log —
-this file only tracks current status and what's still open.
+Detailed history of what was built and fixed each round is in git log — this
+file only tracks current status and what's still open. `js/spotify.js` in
+particular has taken several rounds of real-data-driven fixes as Spotify's
+March 2026 Dev Mode migration turned out to have moved/renamed/reshaped more
+than their docs made obvious; see recent commits for exactly what changed and
+why, each backed by either a live test against the real API response or a
+Node test replaying it.
+
+## Architecture additions since the original build
+
+- `js/spotifySync.js` — single shared cache of "the DJ's playlist tracks,"
+  synced once (in the background on app init if already logged in, or
+  on-demand from Settings/Spotify Corner/Live Set) and reused everywhere
+  instead of each screen fetching its own copy. Exposes `syncPlaylists()`,
+  `getSyncStatus()`, `onSyncChange()` for live status across tabs.
+- `js/spotifyCorner.js` + the "Spotify Corner" tab — browsable, searchable
+  view of every synced track, grouped by playlist (mirrors Vinyl Corner's
+  pattern, Serato-style "your Spotify library as a browsable panel"). Has its
+  own "Sync now" button; auto-syncs on open via the shared cache.
+- `pickSpotifyCandidate()` in `js/liveset.js` is the single source for every
+  live Spotify pick (auto-suggest, Full Set lookahead, Shuffle): ~90% from
+  the synced playlist pool, ~10% fresh catalog search for variety, excluding
+  tracks already played this set.
 
 ## Recent decisions
 
 - Hosting: GitHub Pages static site, not a Claude Artifact (Artifacts block
   external fetch, so they can't reach the Spotify API).
 - Spotify: Authorization Code + PKCE, client-side only, DJ's own Client ID
-  (Premium account, confirmed — required by Spotify's Feb 2026 Developer
-  Mode rules). No pre-seeded playlists.
+  (Premium account — required by Spotify's Feb 2026 Developer Mode rules).
+  Login scope is `playlist-read-private playlist-read-collaborative` with
+  `show_dialog: true` forced (Spotify silently reuses old scope grants on
+  re-login otherwise, with no visible consent prompt for the new scope).
 - Spotify's `/recommendations` and `audio-features` endpoints are
-  permanently blocked for any app created after Nov 2024 (ours included) —
-  there is no reachable "real" Spotify ML recommendation. The Spotify
-  bridge turn instead auto-builds and auto-runs a search from the bridge
-  target's flavor tags, auto-picks the top result, and says so explicitly
-  in the UI. Tempo is captured via tap-tempo, not `audio-features`.
+  permanently blocked for any app created after Nov 2024 — there is no
+  reachable "real" Spotify ML recommendation. Bridge picks are an
+  auto-built/auto-run search (or a playlist pick) against a displayed
+  BPM/energy/flavor target instead, and the UI says so explicitly. Tempo is
+  captured via tap-tempo, never `audio-features`.
+- `/playlists/{id}/tracks` is dead (removed for Dev Mode apps in Spotify's
+  March 2026 migration) — use `/playlists/{id}/items`. Its response nests
+  the track object under a key literally named `item` (not `track`), and
+  may omit `uri` entirely. `getPlaylistTracks` parses this tolerantly and
+  requires only a title, not a uri.
 - Alternation is strict: vinyl → Spotify → vinyl → Spotify, no exceptions.
 - Guest-brought vinyls get priority placement (next 3 unplayed slots only).
-- Every track (vinyl or Spotify) has explicit `album`/`trackNumber` fields
-  now, not baked into `title`.
-- Upcoming Spotify bridge slots are pre-fetched and cached ("planned")
-  for the next few gaps (`LOOKAHEAD_GAPS = 3` in `js/liveset.js`) so the
-  Full Set list shows real suggested songs instead of "TBD" — capped to
-  avoid firing a search per gap on every render, and because far-future
-  slots are likely to get reshuffled by later guest additions anyway.
-  Every row (vinyl or Spotify, current or future) has a "Change" control.
+- Plan direction (mellow-building-up vs. energetic-winding-down) is driven
+  by Settings' Mood lever start vs. end (`getPlanDirection`), not hardcoded.
+- Every track (vinyl or Spotify) has explicit `album`/`trackNumber` fields,
+  an estimated-BPM flag (`bpmEstimated`) shown as a warning until tap-tempo
+  confirms it, and a "Change" control that does a live-value search (not
+  locked to whatever the slot started as).
 - "Reset" in Settings (`Store.resetSetData()`) only clears
   tracks/plan/live-progress — never the Spotify Client ID or login.
+- Cache-busting: every internal import and the `index.html` entry script
+  carry a shared `?v=<tag>` query string, bumped on every push (see
+  CLAUDE.md for the one-liner). Still tell the user to hard-refresh after
+  each push — busting guarantees a fresh *network* fetch, not that an
+  already-open tab has re-requested anything.
 
 ## Open threads / next steps
 
-- [ ] User to paste tonight's 13-record JSON into Crate Builder if not
-      already done, and confirm Live Set reflects it.
-- [ ] User adds/confirms their own vinyls via Crate Builder, tap-tempo
-      confirming each estimated BPM for real.
 - [ ] A few `data/collection.json` entries carry a `"note"` field flagging
-      an unresolved/uncertain dictated title (e.g. Bob Dylan "Side
-      Tracks") — fine to leave, fix opportunistically.
-- [x] Fixed the crate always sorting mellow-first regardless of intent:
-      `insertVinylTrack` now takes a `direction` ('asc'/'desc'), derived
-      via new `getPlanDirection(settings)` from Settings' Mood lever
-      start/end (start < end -> ascending/build-up, start > end ->
-      descending/wind-down). All insertion call sites (Crate Builder form,
-      bulk/one-click import, guest-add) now pass it. Added a "Reverse
-      order" button in Crate Builder to flip an already-built plan
-      in place without rebuilding. Regression test added for both
-      directions.
-- [x] Fixed the real reason only the first Spotify lookahead gap ever
-      resolved: `gapIndex` was `future.indexOf(entry)` - an index into the
-      full vinyl+gap interleaved array (0, 2, 4, 6...), not a count of gap
-      entries, so it undercounted against `LOOKAHEAD_GAPS` and silently
-      skipped fetching for the 2nd+ gap onward. Now uses a dedicated
-      `spotifyGapCount` counter incremented only for gap entries. Also
-      serialized the lookahead fetches (chained via a single promise
-      instead of fired concurrently) as a defensive measure against any
-      token-refresh/rate-limit races between simultaneous Spotify calls.
-- [x] Fixed misleading "TBD — finding a match…" text in Full Set staying
-      forever even after a lookahead search failed/errored - now
-      distinguishes "still loading" from "gave up, tap Change," and logs
-      the actual error to the console for diagnosis.
-- [x] Raw sample proved the request returns real items (200, non-empty
-      `items` array), so the bug was purely in parsing. The response
-      shape hints the track fields may now sit flat on the item rather
-      than nested under `track`, and `uri` may be absent entirely in the
-      trimmed Dev Mode response - the old guard required `uri` and so
-      silently dropped every row. Parser now needs only a title, tolerates
-      both shapes, and keeps tracks with no uri. Covered by a Node test
-      (`scratchpad/playlist-parse-test.mjs`) that stubs fetch and asserts
-      both the nested and flattened shapes parse correctly. The raw-sample
-      diagnostic also now prints the item's key structure instead of a
-      truncated envelope, so any remaining mismatch is legible at a glance.
-- [x] Playlist fetch was succeeding (200 OK) but parsing 0 tracks - the
-      `fields` filter expression likely named a path Spotify's March 2026
-      migration also trimmed from response objects, which returns empty
-      rather than erroring. Dropped the filter, parse the full object
-      defensively (tolerates either `{track: {...}}` or a flat item
-      shape). Also added `getPlaylistRawSample()` + wired it into
-      Settings' "Save & test": if a playlist still parses to 0 tracks,
-      the status message now shows the actual raw JSON Spotify returned
-      (truncated) directly in the UI, no DevTools needed, so any further
-      mismatch is visible immediately instead of guessed at blind.
-- [x] Found the actual root cause of the playlist fetch failing even after
-      a fresh login/scope grant: `getPlaylistTracks` was calling
-      `/playlists/{id}/tracks`, which Spotify deprecated and removed for
-      Development Mode apps in their March 2026 migration - it's
-      `/playlists/{id}/items` now. Confirmed via Spotify's own migration
-      guide (web search), not a guess. Fixed the one call site.
-- [x] Fixed the real reason re-login didn't grant the new playlist scope:
-      Spotify silently re-issues a token on whatever scope was already
-      approved if the app was ever authorized before, with no visible
-      prompt - so a newly-added scope never actually reached the user.
-      Added `show_dialog: true` to the authorize request to force the
-      consent screen every time.
-- [x] Added a vinyl Shuffle (matching the Spotify one): swaps the vinyl in
-      a slot with a random other unplayed vinyl elsewhere in the plan.
-      Available on the live "Next up" vinyl card and every vinyl row in
-      Full Set. Verified end-to-end with a simulated click.
-- [x] "Save" for playlists was silent (just said "Playlists saved" with no
-      indication whether the fetch actually worked) - the real cause of
-      "why can't you pull my playlist" is almost certainly that the login
-      scope was only added going forward, and Spotify doesn't retroactively
-      grant scope to an existing token on refresh - a one-time re-login is
-      unavoidable. Renamed the button "Save & test": it now actually
-      fetches each configured playlist immediately and reports real
-      track counts or the exact failure (not-logged-in / 403-missing-scope
-      with the log-out-then-in instruction / other error with the raw
-      message), instead of trusting it silently. Verified both the
-      not-logged-in and fetch-failure report paths visually.
-- [x] Hardened the drag-to-reorder after user reported it not working:
-      bigger CSS-drawn handle (was a tiny Unicode glyph, likely too small
-      a touch/click target), pointer capture on the handle, and - most
-      importantly - added guaranteed-to-work ▲/▼ move buttons on every
-      upcoming vinyl row as a fallback that needs no drag gesture at all.
-      Verified both the up-arrow swap and its played-neighbor guard with
-      simulated clicks.
-- [x] Spotify bridge picks now mix from the DJ's own playlists: added
-      Settings field for playlist URL(s)/IDs, `spotify.js`'s
-      `getPlaylistTracks`/`parsePlaylistId`, and login scope
-      `playlist-read-private playlist-read-collaborative` (existing
-      logins need to log out/in once to pick up the new scope). New
-      `pickSpotifyCandidate()` in liveset.js is the single source for
-      every Spotify pick (auto-suggest, Full Set lookahead, Shuffle):
-      ~90% from the playlist pool, ~10% fresh catalog search, excluding
-      already-played URIs. Every Spotify row shows "from your playlist"
-      vs "new" and a new &#128256; Shuffle button for an instant reroll
-      with no typing. Verified visually with a faked playlist pick.
-- [x] Added drag-to-reorder for upcoming vinyl rows in Full Set. Uses
-      Pointer Events (not native HTML5 drag-and-drop) so it works on
-      touch as well as mouse - a `.drag-handle` per row, drop target
-      resolved by comparing pointer Y against each row's bounding rect,
-      reorder committed to `Store.planOrder` on release (dropping = insert
-      before the target row), full re-render via refreshTurn(). Verified
-      end-to-end with simulated PointerEvents: dragging the last row onto
-      the first correctly reordered the underlying plan data and every
-      dependent view (Next up, Full Set) picked it up immediately.
-- [x] Fixed a real bug: the vinyl "Change" editor's Spotify lookup was
-      hardcoded to `track.artist`/`track.album` from the original closure,
-      completely ignoring anything typed into the form - so it could only
-      ever search the same record it started with. There was also no
-      Artist/Album field to edit in the first place. Added both fields
-      and switched the lookup to a live-value direct track search
-      (matching the Add form's pattern), so Change can now swap a slot to
-      a genuinely different song/artist, not just another track off the
-      same record. Verified visually.
-- [x] Made the Spotify "Next up" card visually match the vinyl one: plain
-      track-row (no separate "Suggested next" label), then a `.row` of
-      [primary action, "Change"] buttons, then a mount point for the
-      expanded search UI - same shape as vinyl's [Mark played, Change
-      track] + change-vinyl-mount. Replaced the old `<details>` collapsible
-      search with the same click-to-expand mount pattern vinyl already
-      used. Verified visually with a faked login + planned pick.
-- [x] Slimmed the Mood lever card down to one compact row (label, slider,
-      auto checkbox, "Start" button) plus a one-line hint - was a full
-      multi-line card taking up a lot of vertical space for a control
-      that's set once and mostly ignored.
-- [x] Guest vinyl form now auto-collapses after 10s of no interaction
-      inside it (any input/click resets the timer, so a burst of quick
-      adds isn't cut off) - it was staying open indefinitely and eating
-      screen space. Verified with Chrome's virtual time (no real waiting)
-      that it opens correctly and is gone by 12s of inactivity.
-- [x] Raised `LOOKAHEAD_GAPS` from 3 to 25 - user confirmed the ones it
-      did attempt worked correctly, just wanted more of the set filled in.
-      Fetches are already serialized (one at a time), so this just takes
-      longer to fully populate, not more simultaneous load.
-- [x] Full visual restyle to a single fixed "cyberpunk colorwave" theme
-      per explicit request: deep violet-black background with a faint
-      grid, neon magenta/cyan palette, gradient app title, glowing
-      borders/buttons, monospace tempo readout. No more light/dark
-      media-query split - this look is now the only theme. All existing
-      class names/structure kept, so no HTML/JS changes needed.
-- [x] Investigated "guest track missing from Full Set" - it wasn't actually
-      missing (verified via headless test: correctly tempo-sorted at its
-      100 BPM default, between the two records that BPM falls between).
-      The real problem: an untapped default BPM makes its plan position a
-      pure guess, not a real transition fit, and that wasn't visible.
-      Added a `bpmEstimated` flag (set on save, cleared once the DJ taps or
-      types a real tempo) and a "&#9888; N BPM (est.)" warning wherever BPM
-      shows - Guest Crate, Crate Builder's plan list, and Full Set - so an
-      unconfirmed placement is never mistaken for a considered one.
-- [x] Changed behavior per explicit user ask: picking a Spotify search
-      result in the add-track form now saves the track immediately (no
-      separate "now click Add" step at all - the earlier "make the message
-      louder" fix wasn't enough, user wanted the two-step gone). Tempo is
-      optional and defaults to 100 BPM if not tapped first; fix it later
-      via the "Change" editor, which now also has its own tap-tempo/BPM
-      field and re-runs plan insertion if the BPM actually changed (so a
-      corrected tempo moves the track to its right spot instead of leaving
-      it wherever the default put it). Verified end-to-end headlessly.
-- [x] TBD gap rows now show the real failure (error message or "0 results
-      for <query>") instead of a silent console-only warning - needed for
-      diagnosing why gaps 2/3 still failed after the indexing fix.
-- [x] Added real cache-busting after this bit the user four separate times
-      tonight: every internal import and the `index.html` entry script now
-      carry a shared `?v=<tag>` query string (see CLAUDE.md for the sed
-      one-liner to bump it on every future push). Verified locally that
-      the app still loads correctly with versioned import specifiers.
-      Still tell the user to hard-refresh after each push regardless -
-      busting guarantees a fresh network fetch, not that their already-open
-      tab has re-requested anything.
-- [ ] Not yet tested with a real, logged-in Spotify session end-to-end by
-      Claude (no way to drive OAuth headlessly) — the user is the first
-      real-world test of login, search, and the planned-pick flow.
-- [x] Added a "Build tonight's crate" one-click button to Crate Builder:
-      fetches `data/tonight-crate.json` (the 13-track curated/researched
-      set) and imports it directly, no copy-pasting JSON. Bulk-import
-      textarea kept as an "(advanced)" fallback for any future list
-      Claude hands over mid-night. Verified end-to-end with a headless
-      click simulation - correctly inserts all 13 into a tempo-sorted plan.
-- [x] Reverted the vinyl add-form's Spotify lookup from the two-step
-      album-search-then-tracklist flow back to a direct one-step track
-      search (`searchTracks` already returns album + track number per
-      hit, so the extra step was unnecessary complexity, not a real need).
-      The tracklist-browse flow (`getAlbumTracks`) is kept only inside the
-      "Change track" editor in Live Set, where browsing a known album's
-      full list is the actual intent.
+      an unresolved/uncertain dictated title (e.g. Bob Dylan "Side Tracks")
+      — fine to leave, fix opportunistically.
+- [ ] No automated coverage of the Spotify Corner tab's search/filter UI
+      beyond code review — the render/sync pipeline is tested (headless +
+      mocked fetch), but no test exercises typing into the filter box.
+- [ ] Playlist tracks carry no tempo data (same limitation as search
+      results), so "from your playlist" bridge picks are exactly as
+      unverified-BPM as a fresh search pick — nothing currently flags this
+      the way `bpmEstimated` flags a guest vinyl's default tempo. Worth
+      considering if playlist-sourced Spotify picks ever need the same
+      kind of "this wasn't really tempo-matched" signal vinyl rows get.

@@ -1,13 +1,16 @@
-import { handleRedirect } from './spotify.js?v=20260917t';
-import { renderCrateTab } from './crate.js?v=20260917t';
-import { renderLiveTab } from './liveset.js?v=20260917t';
-import { renderSettingsTab } from './settings.js?v=20260917t';
-import { renderCollectionTab } from './collection.js?v=20260917t';
+import { handleRedirect } from './spotify.js?v=20260917u';
+import { renderCrateTab } from './crate.js?v=20260917u';
+import { renderLiveTab } from './liveset.js?v=20260917u';
+import { renderSettingsTab } from './settings.js?v=20260917u';
+import { renderCollectionTab } from './collection.js?v=20260917u';
+import { renderSpotifyCornerTab } from './spotifyCorner.js?v=20260917u';
+import { syncPlaylistsInBackground } from './spotifySync.js?v=20260917u';
 
 const panels = {
   live: { el: document.getElementById('tab-live'), render: renderLiveTab },
   crate: { el: document.getElementById('tab-crate'), render: renderCrateTab },
   collection: { el: document.getElementById('tab-collection'), render: renderCollectionTab },
+  spotifyCorner: { el: document.getElementById('tab-spotifyCorner'), render: renderSpotifyCornerTab },
   settings: { el: document.getElementById('tab-settings'), render: renderSettingsTab },
 };
 
@@ -28,6 +31,10 @@ document.querySelectorAll('.tab-btn').forEach((btn) => {
 async function init() {
   const cameFromSpotify = await handleRedirect();
   showTab(cameFromSpotify ? 'settings' : 'live');
+  // Seamless sync: if already logged in with playlists configured, start
+  // pulling them in the background right away instead of waiting for the
+  // DJ to visit Settings or Spotify Corner first.
+  syncPlaylistsInBackground();
 }
 
 init();

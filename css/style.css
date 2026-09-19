@@ -298,6 +298,20 @@ button:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
   font-size: 0.8rem;
 }
 
+.spotify-disc {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  background: radial-gradient(circle, var(--accent-soft) 0 6px, var(--spotify) 7px 32px, var(--accent-soft) 33px);
+  box-shadow: var(--glow-cyan);
+  color: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+
 .vinyl-info { flex: 1; }
 .vinyl-artist { font-weight: bold; }
 .vinyl-album { color: var(--ink-soft); font-size: 0.9rem; font-style: italic; }

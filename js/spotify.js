@@ -2,7 +2,7 @@
 // that's the point of PKCE for a public static site. Used only for catalog
 // search (track lookup, album art); no playback control, no audio-features.
 
-import { Store } from './store.js?v=20260917t';
+import { Store } from './store.js?v=20260917u';
 
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -194,6 +194,24 @@ export function parsePlaylistId(input) {
   return s;
 }
 
+/** Just the display name/cover/owner of a playlist - cheap, for labeling it in the UI. */
+export async function getPlaylistMeta(playlistId) {
+  const token = await getValidToken();
+  const params = new URLSearchParams({ fields: 'name,images,owner(display_name),tracks(total)' });
+  const res = await fetch(`${API_BASE}/playlists/${playlistId}?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Spotify playlist info failed: ${res.status}`);
+  const data = await res.json();
+  return {
+    id: playlistId,
+    name: data.name || playlistId,
+    image: data.images?.[data.images.length - 1]?.url || data.images?.[0]?.url || null,
+    owner: data.owner?.display_name || null,
+    total: data.tracks?.total ?? null,
+  };
+}
+
 /** Up to `limit` tracks from one of the DJ's own playlists (paginated 50 at a time). */
 export async function getPlaylistTracks(playlistId, limit = 100) {
   const token = await getValidToken();
@@ -218,7 +236,12 @@ export async function getPlaylistTracks(playlistId, limit = 100) {
     const items = data.items || [];
     if (offset === 0) console.debug('Spotify playlist items sample:', items[0]);
     items.forEach((item) => {
-      const t = item.track || item; // tolerate either {track: {...}} or a flat item shape
+      // Confirmed from a real raw response: Spotify's /items endpoint (the
+      // March 2026 rename from /tracks) nests the actual track object
+      // under a key literally named "item" - not "track" as the old
+      // /tracks endpoint used. Still tolerate the old shape and a flat
+      // one too, in roughly most-to-least-likely order.
+      const t = item.item || item.track || item;
       // Only a title is truly required - uri may simply be absent from
       // Spotify's trimmed Dev Mode response, and a track we can name is
       // still perfectly usable (it just can't be deduped by uri).

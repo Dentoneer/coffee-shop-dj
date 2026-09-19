@@ -1,5 +1,6 @@
-import { Store } from './store.js?v=20260917t';
-import { login, logout, isLoggedIn, handleRedirect, getPlaylistTracks, parsePlaylistId, getPlaylistRawSample } from './spotify.js?v=20260917t';
+import { Store } from './store.js?v=20260917u';
+import { login, logout, isLoggedIn, handleRedirect, parsePlaylistId, getPlaylistRawSample } from './spotify.js?v=20260917u';
+import { syncPlaylists } from './spotifySync.js?v=20260917u';
 
 export function renderSettingsTab(container) {
   const settings = Store.getSettings();
@@ -17,8 +18,9 @@ export function renderSettingsTab(container) {
       <p class="hint">Live Set picks ~90% of Spotify bridges from these, ~10% fresh from search, for variety.
         Leave blank to use search only. Needs the <code>playlist-read</code> scope — if you logged in before
         this existed, click "Log out" above, then "Log into Spotify" again to grant it (one time).</p>
-      <div style="margin-top:0.4rem"><button type="button" class="secondary" id="s-save-playlists">Save &amp; test</button></div>
+      <div style="margin-top:0.4rem"><button type="button" class="secondary" id="s-save-playlists">Save &amp; sync</button></div>
       <p class="hint" id="s-playlist-status"></p>
+      <p class="hint">Browse everything synced under the "Spotify Corner" tab.</p>
     </div>
 
     <div class="card">
@@ -79,25 +81,19 @@ export function renderSettingsTab(container) {
       return;
     }
     if (!isLoggedIn()) {
-      statusEl.textContent = 'Saved, but you\'re not logged into Spotify — click "Log into Spotify" above first, then Save & test again.';
+      statusEl.textContent = 'Saved, but you\'re not logged into Spotify — click "Log into Spotify" above first, then Save & sync again.';
       return;
     }
-    statusEl.textContent = 'Testing…';
-    const results = await Promise.all(ids.map(async (id) => {
-      try {
-        const tracks = await getPlaylistTracks(id, 50);
-        return { id, ok: true, count: tracks.length };
-      } catch (e) {
-        return { id, ok: false, error: e.message };
-      }
-    }));
-    const failed = results.filter((r) => !r.ok);
-    const okTotal = results.filter((r) => r.ok).reduce((sum, r) => sum + r.count, 0);
-    if (failed.length === 0 && okTotal > 0) {
-      statusEl.textContent = `Connected — pulled ${okTotal} track(s) from ${results.length} playlist(s). Bridges will use these.`;
-    } else if (failed.length === 0 && okTotal === 0) {
-      // Request succeeded but parsed zero tracks - grab a raw sample so
-      // there's something concrete to look at instead of guessing blind.
+    statusEl.textContent = 'Syncing…';
+    // Goes through the same shared sync used by Live Set and Spotify
+    // Corner, so this "test" is the real thing, not a separate check.
+    const status = await syncPlaylists({ force: true });
+    const failed = status.playlists.filter((p) => !p.ok);
+    if (failed.length === 0 && status.tracks.length > 0) {
+      statusEl.textContent = `Connected — synced ${status.tracks.length} track(s) from ${status.playlists.length} playlist(s). See them in Spotify Corner.`;
+    } else if (failed.length === 0 && status.tracks.length === 0) {
+      // Synced OK but parsed zero tracks - grab a raw sample so there's
+      // something concrete to look at instead of guessing blind again.
       statusEl.textContent = 'Connected, but parsed 0 tracks - fetching a raw sample to see why…';
       try {
         const sample = await getPlaylistRawSample(ids[0]);
@@ -106,10 +102,10 @@ export function renderSettingsTab(container) {
       } catch (e) {
         statusEl.textContent = `Connected, but parsed 0 tracks, and the raw sample fetch also failed: ${e.message}`;
       }
-    } else if (failed.some((r) => r.error.includes('403'))) {
-      statusEl.textContent = `Failed (403 — missing permission). Click "Log out" above, then "Log into Spotify" again to grant playlist access, then Save & test once more.`;
+    } else if (failed.some((p) => p.error && p.error.includes('403'))) {
+      statusEl.textContent = `Failed (403 — missing permission). Click "Log out" above, then "Log into Spotify" again to grant playlist access, then Save & sync once more.`;
     } else {
-      statusEl.textContent = `${okTotal} track(s) loaded OK, but ${failed.length} playlist(s) failed: ${failed.map((r) => `${r.id} (${r.error})`).join(', ')}. Check the link(s) are correct.`;
+      statusEl.textContent = `${status.tracks.length} track(s) synced OK, but ${failed.length} playlist(s) failed: ${failed.map((p) => `${p.name || p.id} (${p.error})`).join(', ')}. Check the link(s) are correct.`;
     }
   });
 

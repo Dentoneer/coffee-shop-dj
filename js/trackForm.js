@@ -7,9 +7,9 @@
 // that extra step was repeatedly missed live. Tempo defaults to a neutral
 // 100 BPM if not tapped yet; fix it later via the "Change" editor.
 
-import { FLAVOR_TAGS, newId, Store } from './store.js?v=20260917t';
-import { createTapTempo } from './tapTempo.js?v=20260917t';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20260917t';
+import { FLAVOR_TAGS, newId, Store } from './store.js?v=20260917u';
+import { createTapTempo } from './tapTempo.js?v=20260917u';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20260917u';
 
 const DEFAULT_BPM = 100;
 

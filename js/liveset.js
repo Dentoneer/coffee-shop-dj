@@ -1,8 +1,9 @@
-import { Store, newId } from './store.js?v=20260917t';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917t';
-import { renderTrackForm } from './trackForm.js?v=20260917t';
-import { searchTracks, isLoggedIn, getPlaylistTracks, parsePlaylistId } from './spotify.js?v=20260917t';
-import { createTapTempo } from './tapTempo.js?v=20260917t';
+import { Store, newId } from './store.js?v=20260917u';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917u';
+import { renderTrackForm } from './trackForm.js?v=20260917u';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20260917u';
+import { createTapTempo } from './tapTempo.js?v=20260917u';
+import { syncPlaylists } from './spotifySync.js?v=20260917u';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no
@@ -10,29 +11,14 @@ import { createTapTempo } from './tapTempo.js?v=20260917t';
 // familiar with new, not a smarter pick.
 const NEW_MUSIC_FRACTION = 0.1;
 
-// Cached across renders for the life of the page load - playlists don't
-// change mid-set, so there's no reason to refetch on every render.
-let playlistPoolPromise = null;
-function getPlaylistPool() {
-  if (playlistPoolPromise) return playlistPoolPromise;
-  const raw = Store.getSettings().spotifyPlaylistUrls || '';
-  const ids = raw.split(/[,\n]/).map((s) => s.trim()).filter(Boolean).map(parsePlaylistId);
-  if (ids.length === 0 || !isLoggedIn()) {
-    playlistPoolPromise = Promise.resolve([]);
-    return playlistPoolPromise;
-  }
-  playlistPoolPromise = Promise.all(ids.map((id) => getPlaylistTracks(id).catch((e) => {
-    console.warn('Playlist fetch failed for', id, e);
-    return [];
-  }))).then((lists) => lists.flat());
-  return playlistPoolPromise;
-}
-
 // The single source of "get me a Spotify bridge candidate" - used for the
 // initial auto-suggestion, the Full Set lookahead, and the Shuffle button,
-// so all three pull from the same 90/10 playlist/discovery mix.
+// so all three pull from the same 90/10 playlist/discovery mix. Playlist
+// tracks come from spotifySync's shared cache (synced once, reused
+// everywhere - Live Set, Spotify Corner - instead of each screen
+// fetching its own copy).
 async function pickSpotifyCandidate(autoQuery, excludeUris = []) {
-  const pool = await getPlaylistPool();
+  const { tracks: pool } = await syncPlaylists();
   const excluded = new Set(excludeUris.filter(Boolean));
   const available = pool.filter((t) => !excluded.has(t.uri));
   const useDiscovery = available.length === 0 || Math.random() < NEW_MUSIC_FRACTION;

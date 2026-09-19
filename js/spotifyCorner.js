@@ -4,7 +4,7 @@
 // same pool Live Set draws bridge picks from (see spotifySync.js), just
 // visible on its own instead of buried in Settings.
 
-import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20260918e';
+import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20260918f';
 
 // Tab containers in this app are hidden (display:none), not removed from
 // the DOM, on tab-switch - so a plain "unsubscribe the previous listener

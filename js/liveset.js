@@ -1,12 +1,12 @@
-import { Store, newId } from './store.js?v=20260918e';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260918e';
-import { renderTrackForm } from './trackForm.js?v=20260918e';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20260918e';
-import { createTapTempo } from './tapTempo.js?v=20260918e';
-import { syncPlaylists } from './spotifySync.js?v=20260918e';
-import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=20260918e';
-import { renderMoodWave, PRESETS } from './moodWave.js?v=20260918e';
-import { generateCrate } from './crateGenerator.js?v=20260918e';
+import { Store, newId } from './store.js?v=20260918f';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260918f';
+import { renderTrackForm } from './trackForm.js?v=20260918f';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20260918f';
+import { createTapTempo } from './tapTempo.js?v=20260918f';
+import { syncPlaylists } from './spotifySync.js?v=20260918f';
+import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=20260918f';
+import { renderMoodWave, PRESETS } from './moodWave.js?v=20260918f';
+import { generateCrate } from './crateGenerator.js?v=20260918f';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no
@@ -20,10 +20,23 @@ const NEW_MUSIC_FRACTION = 0.1;
 // tracks come from spotifySync's shared cache (synced once, reused
 // everywhere - Live Set, Spotify Corner - instead of each screen
 // fetching its own copy).
-async function pickSpotifyCandidate(autoQuery, excludeUris = []) {
+async function pickSpotifyCandidate(autoQuery, excludeUris = [], energyTarget = null) {
   const { tracks: pool } = await syncPlaylists();
   const excluded = new Set(excludeUris.filter(Boolean));
-  const available = pool.filter((t) => !excluded.has(t.uri));
+  let available = pool.filter((t) => !excluded.has(t.uri));
+  // Prefer tracks from a DJ-tagged playlist whose mood is close to the
+  // current target (e.g. a "party" playlist tagged 5 shouldn't surface
+  // during a mellow stretch) - only narrows the pool when at least one
+  // playlist has actually been tagged; untagged playlists stay untouched
+  // so this is a no-op for anyone who hasn't set it up.
+  if (energyTarget != null && available.length > 0) {
+    const energyTags = Store.getSettings().playlistEnergy || {};
+    const moodMatched = available.filter((t) => {
+      const tag = energyTags[t.playlistId];
+      return tag != null && Math.abs(tag - energyTarget) <= 1.5;
+    });
+    if (moodMatched.length > 0) available = moodMatched;
+  }
   const useDiscovery = available.length === 0 || Math.random() < NEW_MUSIC_FRACTION;
   if (!useDiscovery) {
     const pick = available[Math.floor(Math.random() * available.length)];
@@ -49,12 +62,31 @@ const FLAVOR_TO_GENRE_HINT = {
   'World': 'world',
 };
 
+// Fallback when there's no flavor hint to go on (the common case - a
+// freshly generated crate's vinyl picks carry no flavorTags at all), so a
+// search-based bridge pick still reflects the mood dial instead of always
+// landing on the same relaxed default regardless of how "elevated" the set
+// currently is. Index = rounded 1-5 energy target.
+const ENERGY_TO_MOOD_HINT = [
+  null,
+  'ambient mellow instrumental',
+  'chill lounge acoustic',
+  'coffee shop jazz',
+  'upbeat feel good dance',
+  'party dance upbeat',
+];
+
+function moodHintForEnergy(energyTarget) {
+  const idx = Math.min(5, Math.max(1, Math.round(energyTarget ?? 3)));
+  return ENERGY_TO_MOOD_HINT[idx];
+}
+
 function buildAutoQuery(bridgeTarget) {
   const genres = bridgeTarget.flavorHint
     .map((f) => FLAVOR_TO_GENRE_HINT[f])
     .filter(Boolean);
   const unique = Array.from(new Set(genres));
-  return unique.slice(0, 2).join(' ') || 'coffee shop jazz';
+  return unique.slice(0, 2).join(' ') || moodHintForEnergy(bridgeTarget.energyTarget);
 }
 
 // How many upcoming Spotify gaps get a real pre-fetched suggestion in the
@@ -426,7 +458,7 @@ export function renderLiveTab(container) {
     turnCard.querySelector('#spotify-shuffle-btn').addEventListener('click', async () => {
       const rowEl = turnCard.querySelector('#spotify-suggestion-row');
       rowEl.innerHTML = '<p class="hint">Shuffling…</p>';
-      const pick = await pickSpotifyCandidate(autoQuery, playedSpotifyUris());
+      const pick = await pickSpotifyCandidate(autoQuery, playedSpotifyUris(), bt.energyTarget);
       if (afterVinylId && pick) Store.setPlannedSpotifyFor(afterVinylId, pick);
       renderSuggestion(pick);
     });
@@ -496,7 +528,7 @@ export function renderLiveTab(container) {
     if (planned) {
       renderSuggestion(planned);
     } else if (afterVinylId) {
-      pickSpotifyCandidate(autoQuery, playedSpotifyUris()).then((pick) => {
+      pickSpotifyCandidate(autoQuery, playedSpotifyUris(), bt.energyTarget).then((pick) => {
         if (pick) Store.setPlannedSpotifyFor(afterVinylId, pick);
         renderSuggestion(pick);
       }).catch(() => renderSuggestion(null));
@@ -771,7 +803,7 @@ export function renderLiveTab(container) {
           if (!entry.afterVinylId) return;
           shuffleBtn.disabled = true;
           const bt2 = getBridgeTarget(entry.leftVinyl, entry.rightVinyl, Store.getSettings());
-          const newPick = await pickSpotifyCandidate(buildAutoQuery(bt2), playedSpotifyUris());
+          const newPick = await pickSpotifyCandidate(buildAutoQuery(bt2), playedSpotifyUris(), bt2.energyTarget);
           if (newPick) Store.setPlannedSpotifyFor(entry.afterVinylId, newPick);
           fillRow(newPick);
         });
@@ -850,7 +882,7 @@ export function renderLiveTab(container) {
             const bt2 = getBridgeTarget(entry.leftVinyl, entry.rightVinyl, Store.getSettings());
             const query = buildAutoQuery(bt2);
             try {
-              const pick = await pickSpotifyCandidate(query, playedSpotifyUris());
+              const pick = await pickSpotifyCandidate(query, playedSpotifyUris(), bt2.energyTarget);
               if (pick) {
                 Store.setPlannedSpotifyFor(entry.afterVinylId, pick);
                 fillRow(pick);

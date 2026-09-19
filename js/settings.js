@@ -1,7 +1,12 @@
-import { Store } from './store.js?v=20260918e';
-import { login, logout, isLoggedIn, handleRedirect, parsePlaylistId, getPlaylistRawSample } from './spotify.js?v=20260918e';
-import { syncPlaylists } from './spotifySync.js?v=20260918e';
-import { summaryLine } from './savedSets.js?v=20260918e';
+import { Store } from './store.js?v=20260918f';
+import { login, logout, isLoggedIn, handleRedirect, parsePlaylistId, getPlaylistRawSample } from './spotify.js?v=20260918f';
+import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20260918f';
+import { summaryLine } from './savedSets.js?v=20260918f';
+
+// Tab containers are hidden (display:none), not removed, on tab-switch - so
+// unsubscribing the previous listener before subscribing a new one is
+// enough (mirrors spotifyCorner.js's identical pattern).
+let unsubscribePrevious = null;
 
 export function renderSettingsTab(container) {
   const settings = Store.getSettings();
@@ -21,6 +26,7 @@ export function renderSettingsTab(container) {
         this existed, click "Log out" above, then "Log into Spotify" again to grant it (one time).</p>
       <div style="margin-top:0.4rem"><button type="button" class="secondary" id="s-save-playlists">Save &amp; sync</button></div>
       <p class="hint" id="s-playlist-status"></p>
+      <div id="s-playlist-energy"></div>
       <p class="hint">Browse everything synced under the "Spotify Corner" tab.</p>
     </div>
 
@@ -78,6 +84,39 @@ export function renderSettingsTab(container) {
   container.querySelector('#s-client-id').addEventListener('change', (e) => {
     Store.updateSettings({ spotifyClientId: e.target.value.trim() });
   });
+
+  const MOOD_WORDS = ['', 'mellow', 'low-key', 'mid', 'upbeat', 'party'];
+  function renderPlaylistEnergy() {
+    const el = container.querySelector('#s-playlist-energy');
+    const playlists = getSyncStatus().playlists.filter((p) => p.ok);
+    if (playlists.length === 0) { el.innerHTML = ''; return; }
+    const tags = Store.getSettings().playlistEnergy || {};
+    el.innerHTML = `
+      <p class="hint" style="margin-top:0.6rem;">Tag each playlist's mood so bridges lean on the right one for the
+        moment (e.g. a "Party" playlist won't surface during a mellow stretch). Leave "Any mood" if it's mixed —
+        that's also what happens if you don't tag anything at all.</p>
+      ${playlists.map((p) => `
+        <div class="row" style="align-items:center;gap:0.5rem;">
+          <div style="flex:1;">${p.name}</div>
+          <select data-energy-for="${p.id}">
+            <option value="">Any mood</option>
+            ${[1, 2, 3, 4, 5].map((v) => `<option value="${v}" ${tags[p.id] === v ? 'selected' : ''}>${v} — ${MOOD_WORDS[v]}</option>`).join('')}
+          </select>
+        </div>
+      `).join('')}
+    `;
+    el.querySelectorAll('[data-energy-for]').forEach((sel) => {
+      sel.addEventListener('change', () => {
+        const current = { ...(Store.getSettings().playlistEnergy || {}) };
+        if (sel.value === '') delete current[sel.dataset.energyFor];
+        else current[sel.dataset.energyFor] = Number(sel.value);
+        Store.updateSettings({ playlistEnergy: current });
+      });
+    });
+  }
+  renderPlaylistEnergy();
+  if (unsubscribePrevious) unsubscribePrevious();
+  unsubscribePrevious = onSyncChange(() => renderPlaylistEnergy());
 
   container.querySelector('#s-save-playlists').addEventListener('click', async () => {
     const raw = container.querySelector('#s-playlists').value.trim();

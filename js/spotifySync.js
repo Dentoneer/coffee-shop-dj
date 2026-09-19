@@ -5,8 +5,8 @@
 // fetch, and there's one place (getSyncStatus) that always knows what
 // happened last, for real status instead of silence.
 
-import { Store } from './store.js?v=20260918e';
-import { isLoggedIn, getPlaylistTracks, getPlaylistMeta, parsePlaylistId } from './spotify.js?v=20260918e';
+import { Store } from './store.js?v=20260918f';
+import { isLoggedIn, getPlaylistTracks, getPlaylistMeta, parsePlaylistId } from './spotify.js?v=20260918f';
 
 let status = {
   at: null,        // Date.now() of the last completed sync, or null if never
@@ -71,7 +71,7 @@ export function syncPlaylists({ force = false } = {}) {
         return { ...meta, ok: false, count: 0, error: e.message, tracks: [] };
       }
     }));
-    const tracks = results.flatMap((r) => r.tracks.map((t) => ({ ...t, playlistName: r.name })));
+    const tracks = results.flatMap((r) => r.tracks.map((t) => ({ ...t, playlistName: r.name, playlistId: r.id })));
     status = {
       at: Date.now(),
       tracks,

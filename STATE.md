@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-09-18 (Reset Set added)_
+_Last updated: 2026-09-18 (mood-aware Spotify bridge picks)_
 
 ## Current status
 
@@ -168,6 +168,41 @@ sets, Spotify login, and Set-arc lever *bounds* (leverStart/End in Settings)
 are all preserved — only the live working set resets. Verified end-to-end
 (headless): tracks 2→0, planOrder 2→0, setStartedAt cleared to null, mood
 arc bounds preserved.
+
+## Spotify bridge picks weren't actually mood-aware
+
+Reported live: a set with the mood dial pushed all the way to "elevated"
+(party) still surfaced a mellow bridge pick (Clair de Lune). Root cause was
+two real bugs, not a guess:
+- `buildAutoQuery()` — the search query built for the ~10% "fresh discovery"
+  path and for any Change/search box prefill — ignored `energyTarget`
+  entirely and fell back to a **hardcoded `'coffee shop jazz'`** whenever
+  there was no flavor hint to work from. Since every crate-generator-made
+  vinyl pick carries `flavorTags: []` (crateGenerator.js never sets them),
+  that fallback fired on effectively every freshly generated crate,
+  regardless of the mood dial - so "party" mode kept searching for coffee
+  shop jazz. Fixed: the fallback now maps the rounded 1-5 energy target to
+  a mood-appropriate query (`ambient mellow instrumental` … `party dance
+  upbeat`); energy 3 keeps the original default unchanged.
+- The ~90% "from your synced playlists" path (`pickSpotifyCandidate`) never
+  looked at mood at all — pure random pick across every synced playlist
+  combined, so a stray track from any playlist could surface regardless of
+  target. Since playlist tracks carry no real audio-features data (Spotify
+  blocks that endpoint - already a known limitation), there's no honest way
+  to infer a track's real energy automatically. Instead: **Settings → tag
+  each synced playlist's mood** (1-5, "Any mood" by default). When at least
+  one playlist is tagged, playlist-sourced picks now prefer tracks from a
+  playlist whose tag is within 1.5 of the current target; untagged setups
+  are unaffected (same random-from-everything behavior as before).
+- New `js/store.js` setting `playlistEnergy: {}` (playlist ID → 1-5).
+  `js/spotifySync.js` now attaches `playlistId` to every synced track so
+  the tag can be looked up per-pick.
+Verified: a Node test (mirroring the real logic, per this repo's testing
+pattern for liveset.js internals) covering both the query-fallback fix and
+the pool-filtering fix, including a literal Clair-de-Lune-style
+mellow-playlist-excluded-at-high-energy case; visual/headless confirmation
+that Settings renders a working per-playlist mood dropdown that persists
+correctly once a playlist is synced.
 
 ## Open threads / next steps
 

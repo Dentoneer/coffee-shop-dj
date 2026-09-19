@@ -4,7 +4,7 @@
 // keep changing under the DJ's feet - saving one is a point-in-time copy,
 // never a live link.
 
-import { Store, newId } from './store.js?v=20260918e';
+import { Store, newId } from './store.js?v=20260918f';
 
 /** Builds a full snapshot of the current set under `name`. Does not touch the live set. */
 export function buildSnapshot(name) {

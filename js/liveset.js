@@ -1,9 +1,9 @@
-import { Store, newId } from './store.js?v=20260917u';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260917u';
-import { renderTrackForm } from './trackForm.js?v=20260917u';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20260917u';
-import { createTapTempo } from './tapTempo.js?v=20260917u';
-import { syncPlaylists } from './spotifySync.js?v=20260917u';
+import { Store, newId } from './store.js?v=20260918a';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260918a';
+import { renderTrackForm } from './trackForm.js?v=20260918a';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20260918a';
+import { createTapTempo } from './tapTempo.js?v=20260918a';
+import { syncPlaylists } from './spotifySync.js?v=20260918a';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no

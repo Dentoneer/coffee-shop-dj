@@ -1,21 +1,36 @@
-import { Store } from './store.js?v=20260917u';
-import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260917u';
-import { renderTrackForm } from './trackForm.js?v=20260917u';
+import { Store } from './store.js?v=20260918a';
+import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260918a';
+import { renderTrackForm } from './trackForm.js?v=20260918a';
+import { renderMoodWave, sampleEnergyAtFraction, energyToBpm, PRESETS } from './moodWave.js?v=20260918a';
+
+let cachedCollection = null;
+async function loadCollection() {
+  if (cachedCollection) return cachedCollection;
+  const res = await fetch('data/collection.json');
+  cachedCollection = await res.json();
+  return cachedCollection;
+}
 
 export function renderCrateTab(container) {
+  let curvePoints = PRESETS['Build up'].slice();
+
   container.innerHTML = `
     <div id="crate-form"></div>
     <div class="card">
-      <h3>Build tonight's crate</h3>
-      <p class="hint">One click, no copy-pasting: loads the set Claude curated and researched from your
-        collection straight into the plan. Every track stays fully editable afterward — change the song,
-        BPM, or energy on any row in Crate Builder or Live Set.</p>
-      <button type="button" id="build-crate-btn">Build tonight's crate</button>
+      <h3>Build a crate</h3>
+      <p class="hint">Picks a fresh, random selection from your full collection every time (no more repeats),
+        shaped to whatever mood curve you draw below. Once it's in the plan, every pick stays editable in
+        Live Set's Full Set list — change the song, tap the real BPM, or hit Shuffle for a different record.</p>
+      <label>How many vinyls?</label>
+      <input type="number" id="bc-count" value="12" min="1" max="40" style="max-width:8rem;" />
+      <label>Mood wave for this stretch of the set</label>
+      <div id="bc-wave"></div>
+      <button type="button" id="build-crate-btn">Generate crate</button>
       <p class="hint" id="build-crate-status"></p>
     </div>
     <div id="crate-bulk" class="card">
       <h3>Bulk import (advanced)</h3>
-      <p class="hint">Paste a JSON crate manually — useful if Claude hands you a different list later in the night.</p>
+      <p class="hint">Paste a JSON crate manually — useful if Claude hands you a researched list to use as-is.</p>
       <textarea id="bulk-json" rows="4" style="width:100%;font-family:monospace;"></textarea>
       <div style="margin-top:0.5rem">
         <button type="button" id="bulk-import-btn">Import</button>
@@ -30,6 +45,11 @@ export function renderCrateTab(container) {
       <div id="crate-list"></div>
     </div>
   `;
+
+  renderMoodWave(container.querySelector('#bc-wave'), {
+    points: curvePoints,
+    onChange: (pts) => { curvePoints = pts; },
+  });
 
   function refreshList() {
     const tracks = Store.getTracks();
@@ -78,6 +98,7 @@ export function renderCrateTab(container) {
         trackNumber: raw.trackNumber ?? null,
         source: raw.source || 'vinyl',
         bpm: raw.bpm ?? null,
+        bpmEstimated: !!raw.bpmEstimated,
         energy: raw.energy ?? 3,
         flavorTags: raw.flavorTags || [],
         guestRequested: !!raw.guestRequested,
@@ -125,16 +146,61 @@ export function renderCrateTab(container) {
 
   container.querySelector('#build-crate-btn').addEventListener('click', async () => {
     const statusEl = container.querySelector('#build-crate-status');
-    statusEl.textContent = 'Loading…';
+    const count = Math.max(1, Math.min(40, Number(container.querySelector('#bc-count').value) || 12));
+    statusEl.textContent = 'Picking records…';
     try {
-      const res = await fetch('data/tonight-crate.json');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const incoming = await res.json();
-      const count = importTrackArray(incoming);
-      statusEl.textContent = `Added ${count} track(s) to your plan.`;
+      const collection = await loadCollection();
+      const existing = Store.getTracks();
+      const already = new Set(existing.filter((t) => t.source === 'vinyl').map((t) => `${t.artist}|${t.album}`.toLowerCase()));
+      const available = collection.filter((r) => !already.has(`${r.artist}|${r.album}`.toLowerCase()));
+      if (available.length === 0) {
+        statusEl.textContent = 'Every record in your collection is already in the crate.';
+        return;
+      }
+      // Fresh random sample every click - Fisher-Yates shuffle, take the
+      // first `count` (or all of them if the collection is smaller).
+      const pool = available.slice();
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      const picks = pool.slice(0, Math.min(count, pool.length));
+
+      let order = Store.getPlanOrder();
+      const tracks = Store.getTracks();
+      picks.forEach((record, i) => {
+        const frac = picks.length > 1 ? i / (picks.length - 1) : 0;
+        const energy = sampleEnergyAtFraction(curvePoints, frac);
+        const track = {
+          id: crypto.randomUUID(),
+          title: "(DJ's choice)",
+          artist: record.artist,
+          album: record.album,
+          trackNumber: null,
+          source: 'vinyl',
+          bpm: energyToBpm(energy),
+          bpmEstimated: true,
+          energy: Math.round(energy),
+          flavorTags: [],
+          guestRequested: false,
+          played: false,
+          playedAt: null,
+          addedAt: Date.now(),
+          spotifyArt: null,
+          spotifyUri: null,
+        };
+        Store.addTrack(track);
+        tracks.push(track);
+        // Appended in wave order (not tempo-sorted) - the curve can go
+        // up and down on purpose, so re-sorting by BPM would flatten it.
+        order = [...order, track.id];
+      });
+      Store.savePlanOrder(order);
+      statusEl.textContent = `Added ${picks.length} record(s) shaped to your mood wave. `
+        + `BPMs are estimates (&#9888; marked) - tap tempo or Shuffle any row to refine.`;
       refreshList();
     } catch (e) {
-      statusEl.textContent = `Couldn't load tonight's crate: ${e.message}`;
+      statusEl.textContent = `Couldn't build the crate: ${e.message}`;
     }
   });
 

@@ -76,6 +76,29 @@ Node test replaying it.
   each push — busting guarantees a fresh *network* fetch, not that an
   already-open tab has re-requested anything.
 
+## Crate generation ("Build a crate")
+
+Replaced the old single "Build tonight's crate" button (which always
+loaded the same fixed 13-track JSON) with a generator:
+- **New `js/moodWave.js`**: a draggable SVG "mood wave" - 6 points, x =
+  position through the set, y = energy 1 (mellow) .. 5 (party), connected
+  by lines, each point vertically draggable via pointer events. Presets
+  (Build up / Wind down / Peak middle / Valley middle / Flat).
+  `sampleEnergyAtFraction()` linearly interpolates energy at any point
+  along the curve; `energyToBpm()` maps energy to a BPM estimate (1→65,
+  5→155). Both covered by a Node test.
+- Crate Builder's "Build a crate" card: pick a record count, shape the
+  wave, hit Generate. Fisher-Yates-shuffles the full `data/collection.json`
+  (189 records), excludes anything already in the current crate by
+  artist+album, and takes the first N - so it's a genuinely different
+  selection every click, not the same static list. Each pick's BPM/energy
+  is set from where it falls on the curve (not tempo-sorted - the curve is
+  allowed to go up and down on purpose) and flagged `bpmEstimated` like
+  any other unconfirmed tempo. Verified end-to-end: 8 distinct real
+  artists pulled, BPMs tracking a "Build up" curve exactly (88→144).
+- `data/tonight-crate.json` still exists but is no longer linked from any
+  button - kept as a reference/fallback, not part of the active flow.
+
 ## Open threads / next steps
 
 - [ ] A few `data/collection.json` entries carry a `"note"` field flagging

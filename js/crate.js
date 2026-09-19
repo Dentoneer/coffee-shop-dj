@@ -1,15 +1,8 @@
-import { Store } from './store.js?v=20260918c';
-import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260918c';
-import { renderTrackForm } from './trackForm.js?v=20260918c';
-import { renderMoodWave, sampleEnergyAtFraction, energyToBpm, PRESETS } from './moodWave.js?v=20260918c';
-
-let cachedCollection = null;
-async function loadCollection() {
-  if (cachedCollection) return cachedCollection;
-  const res = await fetch('data/collection.json');
-  cachedCollection = await res.json();
-  return cachedCollection;
-}
+import { Store } from './store.js?v=20260918d';
+import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260918d';
+import { renderTrackForm } from './trackForm.js?v=20260918d';
+import { renderMoodWave, PRESETS } from './moodWave.js?v=20260918d';
+import { generateCrate } from './crateGenerator.js?v=20260918d';
 
 export function renderCrateTab(container) {
   let curvePoints = PRESETS['Build up'].slice();
@@ -149,55 +142,13 @@ export function renderCrateTab(container) {
     const count = Math.max(1, Math.min(40, Number(container.querySelector('#bc-count').value) || 12));
     statusEl.textContent = 'Picking records…';
     try {
-      const collection = await loadCollection();
-      const existing = Store.getTracks();
-      const already = new Set(existing.filter((t) => t.source === 'vinyl').map((t) => `${t.artist}|${t.album}`.toLowerCase()));
-      const available = collection.filter((r) => !already.has(`${r.artist}|${r.album}`.toLowerCase()));
-      if (available.length === 0) {
-        statusEl.textContent = 'Every record in your collection is already in the crate.';
-        return;
+      const result = await generateCrate(count, curvePoints);
+      if (result.error) {
+        statusEl.textContent = result.error;
+      } else {
+        statusEl.textContent = `Added ${result.count} record(s) shaped to your mood wave. `
+          + `BPMs are estimates (&#9888; marked) - tap tempo or Shuffle any row to refine.`;
       }
-      // Fresh random sample every click - Fisher-Yates shuffle, take the
-      // first `count` (or all of them if the collection is smaller).
-      const pool = available.slice();
-      for (let i = pool.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [pool[i], pool[j]] = [pool[j], pool[i]];
-      }
-      const picks = pool.slice(0, Math.min(count, pool.length));
-
-      let order = Store.getPlanOrder();
-      const tracks = Store.getTracks();
-      picks.forEach((record, i) => {
-        const frac = picks.length > 1 ? i / (picks.length - 1) : 0;
-        const energy = sampleEnergyAtFraction(curvePoints, frac);
-        const track = {
-          id: crypto.randomUUID(),
-          title: "(DJ's choice)",
-          artist: record.artist,
-          album: record.album,
-          trackNumber: null,
-          source: 'vinyl',
-          bpm: energyToBpm(energy),
-          bpmEstimated: true,
-          energy: Math.round(energy),
-          flavorTags: [],
-          guestRequested: false,
-          played: false,
-          playedAt: null,
-          addedAt: Date.now(),
-          spotifyArt: null,
-          spotifyUri: null,
-        };
-        Store.addTrack(track);
-        tracks.push(track);
-        // Appended in wave order (not tempo-sorted) - the curve can go
-        // up and down on purpose, so re-sorting by BPM would flatten it.
-        order = [...order, track.id];
-      });
-      Store.savePlanOrder(order);
-      statusEl.textContent = `Added ${picks.length} record(s) shaped to your mood wave. `
-        + `BPMs are estimates (&#9888; marked) - tap tempo or Shuffle any row to refine.`;
       refreshList();
     } catch (e) {
       statusEl.textContent = `Couldn't build the crate: ${e.message}`;

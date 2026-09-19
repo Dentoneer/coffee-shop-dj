@@ -142,6 +142,19 @@ save/retrieve/delete round-tripping. Verified visually end-to-end
   underlying swap algorithm covered by its own Node test including the
   TBD-neighbor edge case.
 
+## Create Set on Live Set (shared crate generator)
+
+Extracted the random-selection/mood-wave-shaping logic that used to live
+only inline in `crate.js` into new `js/crateGenerator.js` (`generateCrate
+(count, curvePoints)`), so Crate Builder's "Build a crate" and a new
+**"Create set"** button next to Save/Open on Live Set both call the exact
+same generator - no duplicate logic to drift apart. "Create set" opens the
+same count input + mood wave editor + Generate button inline on Live Set
+itself, since that's where the user said they actually spend their time.
+Verified end-to-end (real distinct artists pulled, BPMs tracking the
+curve, Full Set/Next-up immediately reflecting the new plan) and the full
+existing test suite re-run clean against the refactor.
+
 ## Open threads / next steps
 
 - [ ] A few `data/collection.json` entries carry a `"note"` field flagging

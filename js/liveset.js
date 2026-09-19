@@ -1,10 +1,12 @@
-import { Store, newId } from './store.js?v=20260918c';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260918c';
-import { renderTrackForm } from './trackForm.js?v=20260918c';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20260918c';
-import { createTapTempo } from './tapTempo.js?v=20260918c';
-import { syncPlaylists } from './spotifySync.js?v=20260918c';
-import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=20260918c';
+import { Store, newId } from './store.js?v=20260918d';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20260918d';
+import { renderTrackForm } from './trackForm.js?v=20260918d';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20260918d';
+import { createTapTempo } from './tapTempo.js?v=20260918d';
+import { syncPlaylists } from './spotifySync.js?v=20260918d';
+import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=20260918d';
+import { renderMoodWave, PRESETS } from './moodWave.js?v=20260918d';
+import { generateCrate } from './crateGenerator.js?v=20260918d';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no
@@ -79,9 +81,11 @@ export function renderLiveTab(container) {
       <div class="row">
         <button type="button" class="secondary" id="toggle-save-set">&#128190; Save this set</button>
         <button type="button" class="secondary" id="toggle-open-set">&#128193; Open set</button>
+        <button type="button" class="secondary" id="toggle-create-set">&#10024; Create set</button>
       </div>
       <div id="save-set-form" style="margin-top:0.5rem;"></div>
       <div id="open-set-form" style="margin-top:0.5rem;"></div>
+      <div id="create-set-form" style="margin-top:0.5rem;"></div>
     </div>
 
     <div class="card" id="turn-card"></div>
@@ -922,14 +926,19 @@ export function renderLiveTab(container) {
   const saveSetFormEl = container.querySelector('#save-set-form');
   const openSetToggleBtn = container.querySelector('#toggle-open-set');
   const openSetFormEl = container.querySelector('#open-set-form');
+  const createSetToggleBtn = container.querySelector('#toggle-create-set');
+  const createSetFormEl = container.querySelector('#create-set-form');
   let saveSetFormShown = false;
   let openSetFormShown = false;
+  let createSetFormShown = false;
 
   function closeSaveSetForm() { saveSetFormShown = false; saveSetFormEl.innerHTML = ''; }
   function closeOpenSetForm() { openSetFormShown = false; openSetFormEl.innerHTML = ''; }
+  function closeCreateSetForm() { createSetFormShown = false; createSetFormEl.innerHTML = ''; }
 
   saveSetToggleBtn.addEventListener('click', () => {
     closeOpenSetForm();
+    closeCreateSetForm();
     if (saveSetFormShown) { closeSaveSetForm(); return; }
     saveSetFormShown = true;
     const defaultName = `Set — ${new Date().toLocaleDateString()}`;
@@ -952,6 +961,7 @@ export function renderLiveTab(container) {
 
   openSetToggleBtn.addEventListener('click', () => {
     closeSaveSetForm();
+    closeCreateSetForm();
     if (openSetFormShown) { closeOpenSetForm(); return; }
     openSetFormShown = true;
     const sets = Store.getSavedSets();
@@ -979,6 +989,49 @@ export function renderLiveTab(container) {
       });
     });
     openSetFormEl.querySelector('#os-cancel').addEventListener('click', closeOpenSetForm);
+  });
+
+  createSetToggleBtn.addEventListener('click', () => {
+    closeSaveSetForm();
+    closeOpenSetForm();
+    if (createSetFormShown) { closeCreateSetForm(); return; }
+    createSetFormShown = true;
+    let curvePoints = PRESETS['Build up'].slice();
+    createSetFormEl.innerHTML = `
+      <p class="hint">Adds a fresh, random selection from your full collection to the current plan,
+        shaped to the mood wave below. Same generator as Crate Builder's "Build a crate."</p>
+      <label>How many vinyls?</label>
+      <input type="number" id="cs-count" value="12" min="1" max="40" style="max-width:8rem;" />
+      <label>Mood wave</label>
+      <div id="cs-wave"></div>
+      <div class="row" style="margin-top:0.4rem;">
+        <button type="button" id="cs-generate">Generate</button>
+        <button type="button" class="secondary" id="cs-cancel">Cancel</button>
+      </div>
+      <p class="hint" id="cs-status"></p>
+    `;
+    renderMoodWave(createSetFormEl.querySelector('#cs-wave'), {
+      points: curvePoints,
+      onChange: (pts) => { curvePoints = pts; },
+    });
+    createSetFormEl.querySelector('#cs-cancel').addEventListener('click', closeCreateSetForm);
+    createSetFormEl.querySelector('#cs-generate').addEventListener('click', async () => {
+      const statusEl = createSetFormEl.querySelector('#cs-status');
+      const count = Math.max(1, Math.min(40, Number(createSetFormEl.querySelector('#cs-count').value) || 12));
+      statusEl.textContent = 'Picking records…';
+      try {
+        const result = await generateCrate(count, curvePoints);
+        if (result.error) {
+          statusEl.textContent = result.error;
+        } else {
+          statusEl.textContent = `Added ${result.count} record(s) shaped to your mood wave — see them below in Full Set. `
+            + `BPMs are estimates (&#9888;) - tap tempo or Shuffle any row to refine.`;
+          refreshTurn();
+        }
+      } catch (e) {
+        statusEl.textContent = `Couldn't build the crate: ${e.message}`;
+      }
+    });
   });
 
   refreshLever();

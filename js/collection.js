@@ -1,3 +1,4 @@
+import { icon } from './icons.js?v=20260920mc';
 // Vinyl Corner: a cozy, browsable, alphabetized view of the full personal
 // collection (data/collection.json). Separate from Crate Builder, which is
 // only the subset tagged with tempo/energy for a specific live set.
@@ -18,7 +19,7 @@ async function loadCollection() {
 export function renderCollectionTab(container) {
   container.innerHTML = `
     <div class="card">
-      <h2>&#128191; Vinyl Corner</h2>
+      <h2>${icon('vinyl')} Vinyl Corner</h2>
       <p class="hint">Your personal collection, alphabetized by artist.</p>
       <input type="text" id="vc-filter" placeholder="Search artist or album..." />
       <p class="hint" id="vc-count"></p>
@@ -58,7 +59,7 @@ export function renderCollectionTab(container) {
         const card = document.createElement('div');
         card.className = 'vinyl-card';
         card.innerHTML = `
-          <div class="vinyl-disc">&#9835;</div>
+          <div class="vinyl-disc">${icon('vinyl')}</div>
           <div class="vinyl-info">
             <div class="vinyl-artist">${r.artist}</div>
             <div class="vinyl-album">${r.album}</div>

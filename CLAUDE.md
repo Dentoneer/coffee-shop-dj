@@ -48,6 +48,12 @@ Full design rationale: `docs/superpowers/specs/2026-09-16-coffee-shop-dj-design.
 - `js/crate.js`, `js/liveset.js` — per-tab UI rendering and handlers.
   `pickSpotifyCandidate()` in `liveset.js` is the single source for every
   live Spotify pick (auto-suggest, lookahead, Shuffle).
+- `js/icons.js` — `icon(name)` returns an inline monoline SVG (no emoji
+  anywhere in the UI; add new icons to its `PATHS` map). Styled by `.icon`.
+- `css/style.css` — the whole theme (missyCoco moodboard: espresso/sage/blush
+  on ivory; Playfair/Inter/Raleway/Allura). JS references CSS variables by
+  name (`var(--accent)`, `--accent2`, `--border`), so retheme by changing
+  their values, not renaming them.
 - `js/app.js` — tab routing, init, OAuth redirect handling, kicks off a
   background playlist sync + the auto-refresh timer on load if already
   logged in.

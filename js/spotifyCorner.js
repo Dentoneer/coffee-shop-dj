@@ -4,7 +4,8 @@
 // Read-only - this is the same pool Live Set draws bridge picks from, just
 // visible on its own instead of buried in Settings.
 
-import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20260918i';
+import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20260920mc';
+import { icon } from './icons.js?v=20260920mc';
 
 // Tab containers in this app are hidden (display:none), not removed from
 // the DOM, on tab-switch - so a plain "unsubscribe the previous listener
@@ -27,11 +28,11 @@ function statusLine(status) {
 export function renderSpotifyCornerTab(container) {
   container.innerHTML = `
     <div class="card">
-      <h2>&#127911; Spotify Corner</h2>
+      <h2>${icon('headphones')} Spotify Corner</h2>
       <p class="hint">Everything synced from your playlists - the same pool Live Set pulls bridge picks from.</p>
       <div class="row">
         <input type="text" id="sc-filter" placeholder="Search artist, song, or playlist..." />
-        <button type="button" class="secondary" id="sc-sync-btn" style="flex:none;">&#128260; Sync now</button>
+        <button type="button" class="secondary" id="sc-sync-btn" style="flex:none;">${icon('refresh')} Sync now</button>
       </div>
       <p class="hint" id="sc-status"></p>
     </div>
@@ -81,7 +82,7 @@ export function renderSpotifyCornerTab(container) {
         const row = document.createElement('div');
         row.className = 'track-row';
         row.innerHTML = `
-          ${t.albumArt ? `<img src="${t.albumArt}" />` : '<div class="spotify-disc">&#127925;</div>'}
+          ${t.albumArt ? `<img src="${t.albumArt}" />` : `<div class="spotify-disc">${icon('note')}</div>`}
           <div class="track-meta">
             <div class="title">${t.title}</div>
             <div class="sub">${t.artist}${t.album ? ` &middot; ${t.album}` : ''}</div>

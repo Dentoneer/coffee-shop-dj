@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-09-20 (Barbie movie visual reskin)_
+_Last updated: 2026-09-20 (missyCoco moodboard reskin)_
 
 ## Current status
 
@@ -13,8 +13,9 @@ vinyl plan with drag/arrow/shuffle reordering, Spotify PKCE login + search +
 the DJ's own playlists synced in, Live Set's turn-based flow with per-row
 Change/Shuffle on every slot, a full personal vinyl collection (`data/collection.json`,
 189 records) browsable in Vinyl Corner, and a matching **Spotify Corner** tab
-browsing every track synced from the DJ's playlists. Barbie-movie-inspired
-light visual theme throughout (bright pink/white, glossy rounded UI).
+browsing every track synced from the DJ's playlists. missyCoco-moodboard
+visual theme throughout (espresso/sage/blush on warm ivory, Playfair Display
+serif, monoline icons - see the reskin section below).
 
 Detailed history of what was built and fixed each round is in git log — this
 file only tracks current status and what's still open. `js/spotify.js` in
@@ -244,7 +245,43 @@ rounded corners on cards with a rainbow gradient top-border, a soft
 sparkle-dot background, `Baloo 2` + `Poppins` from Google Fonts. Superseded
 two days later by the Barbie reskin below, kept here for history.
 
-## Barbie movie visual reskin ("Full Barbieland")
+## missyCoco moodboard reskin (current theme)
+
+Restyled from a moodboard the user supplied for their other project,
+"missyCoco" (Asian-friendly aesthetic clinics in LA) - the palette, type, and
+component styling were lifted from it; its photography was not (not in the
+repo). Supersedes the Barbie theme below.
+- **Palette** (`css/style.css` `:root`): Warm Ivory `#FFF8F8` page/surface,
+  Blush Beige `#F6EDEB` soft fills, Espresso `#3A1719` brand (primary
+  buttons, headings, vinyl), Sage `#DDEBE5` selected/active, Charcoal
+  `#333` text, Soft Gray `#E5E7EA` borders. One addition not on the board:
+  deep sage `#4F6F60` (`--accent2`/`--spotify`) because pale sage fails
+  contrast as text (5.4:1 on ivory) - it is the Spotify color.
+  **Variable names are unchanged from earlier themes** (`--accent`,
+  `--accent2`, `--vinyl`, ...) because JS inlines `var(--accent)` etc.; only
+  the values were remapped.
+- **Type**: Playfair Display (wordmark, h2, big BPM number), Inter (body/UI),
+  Raleway (letter-spaced uppercase eyebrow + h3 section labels with a
+  leading bar), Allura (script tagline in the header). Loaded via one Google
+  Fonts link in `index.html`.
+- **Icons instead of emoji**: new `js/icons.js` exports `icon(name)`, an
+  inline-SVG monoline set (save, folder, sparkle, refresh, shuffle, vinyl,
+  headphones, note, alert, check, leaf) styled by `.icon` in the CSS. All
+  decorative emoji were removed from JS/HTML (button labels, h2 titles,
+  the vinyl/Spotify disc glyphs, warning/played markers). Card-title icons
+  and the vinyl/Spotify discs render inside soft tinted circles, like the
+  board's icon style. The plain-text arrows/triangles (`▲ ▼ → ↔`) are not
+  emoji and were left alone.
+- **Mobile**: at <=640px, `.row` button rows wrap and Full Set rows (rows
+  with action buttons) stack controls / title / buttons instead of squeezing
+  the title column - verified zero horizontal overflow at 400px on all five
+  tabs (headless Chrome via CDP).
+- Touched `css/style.css`, `index.html`, new `js/icons.js`, and label markup
+  in `liveset.js`, `crate.js`, `collection.js`, `spotifyCorner.js`,
+  `settings.js` - no logic changes. Cache-bust tag bumped to `20260920mc`.
+- Not done: the `▲/▼` move buttons still use text glyphs, not line icons.
+
+## Barbie movie visual reskin (superseded by missyCoco above)
 
 Replaced the dark K-pop theme with a full **light-mode** Barbie aesthetic
 per the user's choice between "disco Barbie" (dark, practical for live use)
@@ -280,6 +317,14 @@ screenshots) that text stays legible against the new white/pink cards.
 
 ## Open threads / next steps
 
+- [ ] **missyCoco reskin is uncommitted and unpushed** (as of 2026-09-20) —
+      working-tree changes only, awaiting the user's go-ahead. After
+      pushing, tell the user to hard-refresh (Pages caches ~10 min).
+- [ ] Not yet checked with a real logged-in Spotify session: the reskin was
+      verified headless with a generated set (all five tabs, desktop +
+      400px), not against live Spotify rows with album art.
+- [ ] The `▲/▼` move buttons in Full Set still use text glyphs; convert to
+      line icons if the user wants them fully on-brand.
 - [ ] A few `data/collection.json` entries carry a `"note"` field flagging
       an unresolved/uncertain dictated title (e.g. Bob Dylan "Side Tracks")
       — fine to leave, fix opportunistically.

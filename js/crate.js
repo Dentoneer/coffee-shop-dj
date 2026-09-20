@@ -1,8 +1,9 @@
-import { Store } from './store.js?v=20260918i';
-import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260918i';
-import { renderTrackForm } from './trackForm.js?v=20260918i';
-import { renderMoodWave, PRESETS } from './moodWave.js?v=20260918i';
-import { generateCrate } from './crateGenerator.js?v=20260918i';
+import { Store } from './store.js?v=20260920mc';
+import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260920mc';
+import { renderTrackForm } from './trackForm.js?v=20260920mc';
+import { renderMoodWave, PRESETS } from './moodWave.js?v=20260920mc';
+import { generateCrate } from './crateGenerator.js?v=20260920mc';
+import { icon } from './icons.js?v=20260920mc';
 
 export function renderCrateTab(container) {
   let curvePoints = PRESETS['Build up'].slice();
@@ -63,11 +64,11 @@ export function renderCrateTab(container) {
       const row = document.createElement('div');
       row.className = 'track-row';
       const bpmText = t.bpmEstimated
-        ? `<span style="color:var(--accent);">&#9888; ${t.bpm} BPM (est.)</span>`
+        ? `<span style="color:var(--accent);">${icon('alert')} ${t.bpm} BPM (est.)</span>`
         : `${t.bpm ?? '?'} BPM`;
       row.innerHTML = `
         <div class="track-meta">
-          <div class="title">${idx + 1}. ${t.artist} — ${t.title} ${t.played ? '&#9989;' : ''}</div>
+          <div class="title">${idx + 1}. ${t.artist} — ${t.title} ${t.played ? icon('check', 'played') : ''}</div>
           <div class="sub">${albumBits.length ? `${albumBits.join(' ')} &middot; ` : ''}${bpmText} &middot; energy ${t.energy}
             ${t.guestRequested ? '<span class="badge guest">guest</span>' : ''}
           </div>
@@ -147,7 +148,7 @@ export function renderCrateTab(container) {
         statusEl.textContent = result.error;
       } else {
         statusEl.textContent = `Added ${result.count} record(s) shaped to your mood wave. `
-          + `BPMs are estimates (&#9888; marked) - tap tempo or Shuffle any row to refine.`;
+          + `BPMs are estimates (marked "est.") - tap tempo or Shuffle any row to refine.`;
       }
       refreshList();
     } catch (e) {

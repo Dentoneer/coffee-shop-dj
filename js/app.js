@@ -1,10 +1,10 @@
-import { handleRedirect } from './spotify.js?v=20260918g';
-import { renderCrateTab } from './crate.js?v=20260918g';
-import { renderLiveTab } from './liveset.js?v=20260918g';
-import { renderSettingsTab } from './settings.js?v=20260918g';
-import { renderCollectionTab } from './collection.js?v=20260918g';
-import { renderSpotifyCornerTab } from './spotifyCorner.js?v=20260918g';
-import { syncPlaylistsInBackground, startAutoRefresh } from './spotifySync.js?v=20260918g';
+import { handleRedirect } from './spotify.js?v=20260918h';
+import { renderCrateTab } from './crate.js?v=20260918h';
+import { renderLiveTab } from './liveset.js?v=20260918h';
+import { renderSettingsTab } from './settings.js?v=20260918h';
+import { renderCollectionTab } from './collection.js?v=20260918h';
+import { renderSpotifyCornerTab } from './spotifyCorner.js?v=20260918h';
+import { syncPlaylistsInBackground, startAutoRefresh } from './spotifySync.js?v=20260918h';
 
 const panels = {
   live: { el: document.getElementById('tab-live'), render: renderLiveTab },

@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-09-20 (auto-sync the whole Spotify library)_
+_Last updated: 2026-09-20 (K-pop visual reskin)_
 
 ## Current status
 
@@ -13,8 +13,8 @@ vinyl plan with drag/arrow/shuffle reordering, Spotify PKCE login + search +
 the DJ's own playlists synced in, Live Set's turn-based flow with per-row
 Change/Shuffle on every slot, a full personal vinyl collection (`data/collection.json`,
 189 records) browsable in Vinyl Corner, and a matching **Spotify Corner** tab
-browsing every track synced from the DJ's playlists. Cyberpunk colorwave visual
-theme throughout.
+browsing every track synced from the DJ's playlists. K-pop-inspired visual
+theme throughout (hot pink/lavender/mint, glossy rounded UI).
 
 Detailed history of what was built and fixed each round is in git log — this
 file only tracks current status and what's still open. `js/spotify.js` in
@@ -235,6 +235,20 @@ deliberately failing) confirms pagination, per-playlist failure isolation,
 and correct `playlistId` attribution; visual/headless confirmation that
 Settings syncs and renders the mood-tag list with no manual entry field
 anywhere.
+
+## K-pop visual reskin
+
+Replaced the "cyberpunk colorwave" theme with a K-pop aesthetic: hot pink
++ lavender-purple + mint palette (`--accent`/`--vinyl`/`--accent2` in
+`css/style.css`), a pastel-yellow sparkle accent (`--accent3`), glossy
+pill-shaped buttons/tabs, bigger rounded corners on cards (18px) with a
+thin rainbow gradient top-border, a soft sparkle-dot background, and two
+Google Fonts pulled in via `index.html` (`Baloo 2` for headings/buttons,
+`Poppins` for body text). Entirely a CSS + `index.html` change - every
+color in the app was already driven by `:root` custom properties (no
+hardcoded hex in any `js/*.js` file), so no JS logic touched. Verified
+visually across Live Set, Crate Builder, and Settings via headless
+screenshots.
 
 ## Open threads / next steps
 

@@ -1,8 +1,8 @@
-import { Store } from './store.js?v=20260918h';
-import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260918h';
-import { renderTrackForm } from './trackForm.js?v=20260918h';
-import { renderMoodWave, PRESETS } from './moodWave.js?v=20260918h';
-import { generateCrate } from './crateGenerator.js?v=20260918h';
+import { Store } from './store.js?v=20260918i';
+import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260918i';
+import { renderTrackForm } from './trackForm.js?v=20260918i';
+import { renderMoodWave, PRESETS } from './moodWave.js?v=20260918i';
+import { generateCrate } from './crateGenerator.js?v=20260918i';
 
 export function renderCrateTab(container) {
   let curvePoints = PRESETS['Build up'].slice();

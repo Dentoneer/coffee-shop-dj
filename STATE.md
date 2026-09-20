@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-09-20 (K-pop visual reskin)_
+_Last updated: 2026-09-20 (Barbie movie visual reskin)_
 
 ## Current status
 
@@ -13,8 +13,8 @@ vinyl plan with drag/arrow/shuffle reordering, Spotify PKCE login + search +
 the DJ's own playlists synced in, Live Set's turn-based flow with per-row
 Change/Shuffle on every slot, a full personal vinyl collection (`data/collection.json`,
 189 records) browsable in Vinyl Corner, and a matching **Spotify Corner** tab
-browsing every track synced from the DJ's playlists. K-pop-inspired visual
-theme throughout (hot pink/lavender/mint, glossy rounded UI).
+browsing every track synced from the DJ's playlists. Barbie-movie-inspired
+light visual theme throughout (bright pink/white, glossy rounded UI).
 
 Detailed history of what was built and fixed each round is in git log — this
 file only tracks current status and what's still open. `js/spotify.js` in
@@ -236,19 +236,47 @@ and correct `playlistId` attribution; visual/headless confirmation that
 Settings syncs and renders the mood-tag list with no manual entry field
 anywhere.
 
-## K-pop visual reskin
+## K-pop visual reskin (superseded below)
 
 Replaced the "cyberpunk colorwave" theme with a K-pop aesthetic: hot pink
-+ lavender-purple + mint palette (`--accent`/`--vinyl`/`--accent2` in
-`css/style.css`), a pastel-yellow sparkle accent (`--accent3`), glossy
-pill-shaped buttons/tabs, bigger rounded corners on cards (18px) with a
-thin rainbow gradient top-border, a soft sparkle-dot background, and two
-Google Fonts pulled in via `index.html` (`Baloo 2` for headings/buttons,
-`Poppins` for body text). Entirely a CSS + `index.html` change - every
-color in the app was already driven by `:root` custom properties (no
-hardcoded hex in any `js/*.js` file), so no JS logic touched. Verified
-visually across Live Set, Crate Builder, and Settings via headless
-screenshots.
++ lavender-purple + mint palette, glossy pill-shaped buttons/tabs, bigger
+rounded corners on cards with a rainbow gradient top-border, a soft
+sparkle-dot background, `Baloo 2` + `Poppins` from Google Fonts. Superseded
+two days later by the Barbie reskin below, kept here for history.
+
+## Barbie movie visual reskin ("Full Barbieland")
+
+Replaced the dark K-pop theme with a full **light-mode** Barbie aesthetic
+per the user's choice between "disco Barbie" (dark, practical for live use)
+and "Full Barbieland" (bright daylight pink, most iconic/recognizable) -
+they picked Full Barbieland. `css/style.css` flipped `color-scheme` to
+`light`: bright pink gradient body background (white/pink at top down to
+saturated hot pink, with white + gold sparkle dots), white glossy cards
+with a thick hot-pink border and a rainbow-gradient top accent bar, pill
+buttons with a glossy plastic-highlight gradient, and a deep magenta ink
+color for body text (contrast-checked against white/pale-pink panels).
+Three Google Fonts via `index.html`: `Pacifico` (cursive script, just the
+site `<h1>`, evokes the Barbie logo), `Fredoka` (rounded bubble weight for
+card headings/buttons/tabs/badges), `Poppins` kept for dense body text
+(track rows, BPM numbers) where a rounder font would hurt legibility.
+
+Two dark-theme assumptions had to be fixed rather than just recolored,
+since they's baked in "the background is dark" logic:
+- `.tab-btn.active` used `color: var(--bg)` (text-matches-background
+  trick, invisible-on-purpose against a light pill) - now hardcoded `#fff`
+  since the active pill is still a saturated pink/violet gradient needing
+  light text regardless of page theme.
+- `.vinyl-disc`/`.spotify-disc`'s center glyph used `color: var(--bg)` for
+  the same reason - now `#fff`, since the glyph always sits on a
+  saturated colored ring, not the page background.
+- `--accent2` (teal/aqua) is used both as a background fill AND as
+  standalone text (card h3, `.tempo-readout`, "from your playlist" label,
+  `button.secondary`) - picked `#0d9488` (~4.6:1 contrast on white)
+  specifically so it stays readable as text on a now-light page, not just
+  decorative.
+Entirely a `css/style.css` + `index.html` change again - no JS logic
+touched. Verified visually (Live Set + Crate Builder, headless
+screenshots) that text stays legible against the new white/pink cards.
 
 ## Open threads / next steps
 

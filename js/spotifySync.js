@@ -7,7 +7,7 @@
 // without asking, and there's one place (getSyncStatus) that always knows
 // what happened last, for real status instead of silence.
 
-import { isLoggedIn, getAllUserPlaylists, getPlaylistTracks } from './spotify.js?v=20260918h';
+import { isLoggedIn, getAllUserPlaylists, getPlaylistTracks } from './spotify.js?v=20260918i';
 
 let status = {
   at: null,        // Date.now() of the last completed sync, or null if never

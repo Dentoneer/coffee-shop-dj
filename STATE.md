@@ -317,9 +317,9 @@ screenshots) that text stays legible against the new white/pink cards.
 
 ## Open threads / next steps
 
-- [ ] **missyCoco reskin is uncommitted and unpushed** (as of 2026-09-20) —
-      working-tree changes only, awaiting the user's go-ahead. After
-      pushing, tell the user to hard-refresh (Pages caches ~10 min).
+- [x] missyCoco reskin committed and pushed to `master` (29b3741,
+      2026-09-20); GitHub Pages redeploys automatically. Pages caches assets
+      ~10 min, so a hard-refresh may be needed to see it.
 - [ ] Not yet checked with a real logged-in Spotify session: the reskin was
       verified headless with a generated set (all five tabs, desktop +
       400px), not against live Spotify rows with album art.

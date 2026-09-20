@@ -2,7 +2,7 @@
 // that's the point of PKCE for a public static site. Used only for catalog
 // search (track lookup, album art); no playback control, no audio-features.
 
-import { Store } from './store.js?v=20260918f';
+import { Store } from './store.js?v=20260918g';
 
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';
@@ -186,30 +186,28 @@ export async function getAlbumTracks(albumId, limit = 50) {
   }));
 }
 
-/** Accepts a full playlist URL, a spotify: URI, or a bare ID and returns the ID. */
-export function parsePlaylistId(input) {
-  const s = input.trim();
-  const urlMatch = s.match(/playlist[/:]([a-zA-Z0-9]+)/);
-  if (urlMatch) return urlMatch[1];
-  return s;
-}
-
-/** Just the display name/cover/owner of a playlist - cheap, for labeling it in the UI. */
-export async function getPlaylistMeta(playlistId) {
+/** Every playlist in the DJ's own Spotify library (owned + followed), paginated automatically - so nothing has to be pasted in by hand. */
+export async function getAllUserPlaylists() {
   const token = await getValidToken();
-  const params = new URLSearchParams({ fields: 'name,images,owner(display_name),tracks(total)' });
-  const res = await fetch(`${API_BASE}/playlists/${playlistId}?${params.toString()}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!res.ok) throw new Error(`Spotify playlist info failed: ${res.status}`);
-  const data = await res.json();
-  return {
-    id: playlistId,
-    name: data.name || playlistId,
-    image: data.images?.[data.images.length - 1]?.url || data.images?.[0]?.url || null,
-    owner: data.owner?.display_name || null,
-    total: data.tracks?.total ?? null,
-  };
+  const out = [];
+  let url = `${API_BASE}/me/playlists?limit=50`;
+  while (url) {
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(`Spotify playlist list failed: ${res.status}`);
+    const data = await res.json();
+    (data.items || []).forEach((p) => {
+      if (!p) return; // Spotify can return a null entry for a playlist that no longer exists
+      out.push({
+        id: p.id,
+        name: p.name || p.id,
+        image: p.images?.[p.images.length - 1]?.url || p.images?.[0]?.url || null,
+        owner: p.owner?.display_name || null,
+        total: p.tracks?.total ?? null,
+      });
+    });
+    url = data.next || null; // Spotify hands back the full next-page URL already
+  }
+  return out;
 }
 
 /** Up to `limit` tracks from one of the DJ's own playlists (paginated 50 at a time). */

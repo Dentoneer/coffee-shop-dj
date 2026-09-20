@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-09-18 (mood-aware Spotify bridge picks)_
+_Last updated: 2026-09-20 (auto-sync the whole Spotify library)_
 
 ## Current status
 
@@ -26,11 +26,16 @@ Node test replaying it.
 
 ## Architecture additions since the original build
 
-- `js/spotifySync.js` — single shared cache of "the DJ's playlist tracks,"
-  synced once (in the background on app init if already logged in, or
-  on-demand from Settings/Spotify Corner/Live Set) and reused everywhere
-  instead of each screen fetching its own copy. Exposes `syncPlaylists()`,
-  `getSyncStatus()`, `onSyncChange()` for live status across tabs.
+- `js/spotifySync.js` — single shared cache of "every track in the DJ's
+  Spotify library," synced once (in the background on app init if already
+  logged in, or on-demand from Settings/Spotify Corner/Live Set) and reused
+  everywhere instead of each screen fetching its own copy. Auto-discovers
+  every playlist via `getAllUserPlaylists()` (paginated `/me/playlists`) -
+  nothing pasted in by hand - and auto-refreshes itself every ~10 minutes
+  plus on tab-return-after-a-while, so a song added mid-set shows up
+  without the DJ doing anything (`startAutoRefresh()`, called once from
+  `app.js`). Exposes `syncPlaylists()`, `getSyncStatus()`, `onSyncChange()`
+  for live status across tabs.
 - `js/spotifyCorner.js` + the "Spotify Corner" tab — browsable, searchable
   view of every synced track, grouped by playlist (mirrors Vinyl Corner's
   pattern, Serato-style "your Spotify library as a browsable panel"). Has its
@@ -203,6 +208,33 @@ the pool-filtering fix, including a literal Clair-de-Lune-style
 mellow-playlist-excluded-at-high-energy case; visual/headless confirmation
 that Settings renders a working per-playlist mood dropdown that persists
 correctly once a playlist is synced.
+
+## Auto-sync the whole Spotify library (no more pasting playlist links)
+
+Replaced the manual "paste playlist link(s)" textarea in Settings entirely.
+`js/spotify.js` gained `getAllUserPlaylists()`, which pages through
+`/me/playlists` (owned + followed) automatically. `spotifySync.js` now
+discovers and syncs every playlist it finds, fetching tracks a few
+playlists at a time (`PLAYLIST_FETCH_CONCURRENCY = 5`) rather than all at
+once, so a large library doesn't fire dozens of concurrent requests and
+trip Spotify's rate limiting. Each track carries `playlistId` (used by the
+mood-tag filtering from the previous fix) and `playlistName`.
+
+"Keep it fresh": `startAutoRefresh()` (called once from `app.js`'s `init`)
+re-syncs in the background every ~10 minutes while the app is open, and
+again immediately on tab-visibility-return if the cache is more than ~5
+minutes stale — covers "I added a song to the playlist mid-set" without
+the DJ touching anything. Settings' playlist card is now just a "Sync now"
+button + status line + the per-playlist mood-tag dropdowns from the
+previous fix; removed the now-dead `spotifyPlaylistUrls` setting,
+`parsePlaylistId()`, and the old single-playlist `getPlaylistMeta()` (its
+job is now done for free by the `/me/playlists` list call itself).
+Verified: a Node test against the real `spotify.js`/`spotifySync.js`
+modules (mocked `fetch`, multi-page `/me/playlists`, one playlist
+deliberately failing) confirms pagination, per-playlist failure isolation,
+and correct `playlistId` attribution; visual/headless confirmation that
+Settings syncs and renders the mood-tag list with no manual entry field
+anywhere.
 
 ## Open threads / next steps
 

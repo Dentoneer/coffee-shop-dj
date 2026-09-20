@@ -1,7 +1,7 @@
-import { Store } from './store.js?v=20260918f';
-import { login, logout, isLoggedIn, handleRedirect, parsePlaylistId, getPlaylistRawSample } from './spotify.js?v=20260918f';
-import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20260918f';
-import { summaryLine } from './savedSets.js?v=20260918f';
+import { Store } from './store.js?v=20260918g';
+import { login, logout, isLoggedIn, handleRedirect, getPlaylistRawSample } from './spotify.js?v=20260918g';
+import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20260918g';
+import { summaryLine } from './savedSets.js?v=20260918g';
 
 // Tab containers are hidden (display:none), not removed, on tab-switch - so
 // unsubscribing the previous listener before subscribing a new one is
@@ -19,12 +19,12 @@ export function renderSettingsTab(container) {
       <p class="hint">Register a free app at developer.spotify.com/dashboard, add
         <code id="s-redirect-uri"></code> as a Redirect URI, and paste the Client ID here.</p>
       <div id="s-spotify-status"></div>
-      <label>Your playlist(s) for Spotify bridges</label>
-      <textarea id="s-playlists" rows="2" placeholder="Paste one or more playlist links/IDs, separated by commas or new lines" style="width:100%;">${settings.spotifyPlaylistUrls}</textarea>
-      <p class="hint">Live Set picks ~90% of Spotify bridges from these, ~10% fresh from search, for variety.
-        Leave blank to use search only. Needs the <code>playlist-read</code> scope — if you logged in before
-        this existed, click "Log out" above, then "Log into Spotify" again to grant it (one time).</p>
-      <div style="margin-top:0.4rem"><button type="button" class="secondary" id="s-save-playlists">Save &amp; sync</button></div>
+      <p class="hint">Live Set pulls Spotify bridges from every playlist in your library automatically —
+        nothing to paste in. Synced fresh in the background every ~10 minutes while the app is open, and
+        again right away if you come back after being away a while, so a song added mid-set shows up on its
+        own. Needs the <code>playlist-read</code> scope — if you logged in before this existed, click
+        "Log out" above, then "Log into Spotify" again to grant it (one time).</p>
+      <div style="margin-top:0.4rem"><button type="button" class="secondary" id="s-sync-now">Sync now</button></div>
       <p class="hint" id="s-playlist-status"></p>
       <div id="s-playlist-energy"></div>
       <p class="hint">Browse everything synced under the "Spotify Corner" tab.</p>
@@ -114,46 +114,53 @@ export function renderSettingsTab(container) {
       });
     });
   }
-  renderPlaylistEnergy();
-  if (unsubscribePrevious) unsubscribePrevious();
-  unsubscribePrevious = onSyncChange(() => renderPlaylistEnergy());
-
-  container.querySelector('#s-save-playlists').addEventListener('click', async () => {
-    const raw = container.querySelector('#s-playlists').value.trim();
-    Store.updateSettings({ spotifyPlaylistUrls: raw });
+  async function renderSyncStatus(status) {
     const statusEl = container.querySelector('#s-playlist-status');
-    const ids = raw.split(/[,\n]/).map((s) => s.trim()).filter(Boolean).map(parsePlaylistId);
-    if (ids.length === 0) {
-      statusEl.textContent = 'Saved (no playlists set — bridges will use search only).';
+    if (status.syncing) { statusEl.textContent = 'Syncing your whole Spotify library…'; return; }
+    if (status.reason === 'not-logged-in') {
+      statusEl.textContent = 'Not logged into Spotify — click "Log into Spotify" above first.';
       return;
     }
-    if (!isLoggedIn()) {
-      statusEl.textContent = 'Saved, but you\'re not logged into Spotify — click "Log into Spotify" above first, then Save & sync again.';
+    if (status.reason === 'list-failed') {
+      statusEl.textContent = (status.error || '').includes('403')
+        ? 'Failed (403 — missing permission). Click "Log out" above, then "Log into Spotify" again to grant playlist access, then Sync now.'
+        : `Couldn't list your playlists: ${status.error}`;
       return;
     }
-    statusEl.textContent = 'Syncing…';
-    // Goes through the same shared sync used by Live Set and Spotify
-    // Corner, so this "test" is the real thing, not a separate check.
-    const status = await syncPlaylists({ force: true });
+    if (status.reason === 'no-playlists') {
+      statusEl.textContent = 'Connected, but no playlists found in your Spotify library.';
+      return;
+    }
+    if (status.at == null) { statusEl.textContent = ''; return; }
     const failed = status.playlists.filter((p) => !p.ok);
     if (failed.length === 0 && status.tracks.length > 0) {
-      statusEl.textContent = `Connected — synced ${status.tracks.length} track(s) from ${status.playlists.length} playlist(s). See them in Spotify Corner.`;
+      statusEl.textContent = `Synced ${status.tracks.length} track(s) from ${status.playlists.length} playlist(s) — auto-refreshes every ~10 min. See them in Spotify Corner.`;
     } else if (failed.length === 0 && status.tracks.length === 0) {
       // Synced OK but parsed zero tracks - grab a raw sample so there's
       // something concrete to look at instead of guessing blind again.
-      statusEl.textContent = 'Connected, but parsed 0 tracks - fetching a raw sample to see why…';
+      statusEl.textContent = `Synced ${status.playlists.length} playlist(s), but parsed 0 tracks - fetching a raw sample to see why…`;
       try {
-        const sample = await getPlaylistRawSample(ids[0]);
-        statusEl.textContent = `Connected, but parsed 0 tracks from ${ids.length} playlist(s). `
+        const sample = await getPlaylistRawSample(status.playlists[0].id);
+        statusEl.textContent = `Synced ${status.playlists.length} playlist(s), but parsed 0 tracks. `
           + `Raw response for the first one (status ${sample.status}): ${sample.body}`;
       } catch (e) {
-        statusEl.textContent = `Connected, but parsed 0 tracks, and the raw sample fetch also failed: ${e.message}`;
+        statusEl.textContent = `Synced ${status.playlists.length} playlist(s), but parsed 0 tracks, and the raw sample fetch also failed: ${e.message}`;
       }
     } else if (failed.some((p) => p.error && p.error.includes('403'))) {
-      statusEl.textContent = `Failed (403 — missing permission). Click "Log out" above, then "Log into Spotify" again to grant playlist access, then Save & sync once more.`;
+      statusEl.textContent = 'Failed (403 — missing permission). Click "Log out" above, then "Log into Spotify" again to grant playlist access, then Sync now.';
     } else {
-      statusEl.textContent = `${status.tracks.length} track(s) synced OK, but ${failed.length} playlist(s) failed: ${failed.map((p) => `${p.name || p.id} (${p.error})`).join(', ')}. Check the link(s) are correct.`;
+      statusEl.textContent = `${status.tracks.length} track(s) synced OK, but ${failed.length} of ${status.playlists.length} playlist(s) failed: ${failed.map((p) => `${p.name || p.id} (${p.error})`).join(', ')}.`;
     }
+  }
+  renderPlaylistEnergy();
+  renderSyncStatus(getSyncStatus());
+  if (unsubscribePrevious) unsubscribePrevious();
+  unsubscribePrevious = onSyncChange((status) => { renderPlaylistEnergy(); renderSyncStatus(status); });
+
+  container.querySelector('#s-sync-now').addEventListener('click', () => {
+    // Goes through the same shared, auto-refreshing sync used by Live Set
+    // and Spotify Corner - this is the real thing, not a separate check.
+    syncPlaylists({ force: true });
   });
 
   function renderSavedSets() {

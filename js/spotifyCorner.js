@@ -1,10 +1,10 @@
-// Spotify Corner: a browsable view of every track synced from the DJ's own
-// playlists (Settings -> "Your playlist(s) for Spotify bridges"), grouped
-// by playlist like a Serato-style Spotify panel. Read-only - this is the
-// same pool Live Set draws bridge picks from (see spotifySync.js), just
+// Spotify Corner: a browsable view of every track synced from every
+// playlist in the DJ's Spotify library (auto-discovered, see
+// spotifySync.js), grouped by playlist like a Serato-style Spotify panel.
+// Read-only - this is the same pool Live Set draws bridge picks from, just
 // visible on its own instead of buried in Settings.
 
-import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20260918f';
+import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20260918g';
 
 // Tab containers in this app are hidden (display:none), not removed from
 // the DOM, on tab-switch - so a plain "unsubscribe the previous listener
@@ -14,7 +14,8 @@ let unsubscribePrevious = null;
 function statusLine(status) {
   if (status.syncing) return 'Syncing…';
   if (status.reason === 'not-logged-in') return 'Not logged into Spotify - log in under Settings first.';
-  if (status.reason === 'no-playlists') return 'No playlists configured yet - add some under Settings.';
+  if (status.reason === 'no-playlists') return 'No playlists found in your Spotify library.';
+  if (status.reason === 'list-failed') return `Couldn't list your playlists: ${status.error || ''}`;
   if (!status.at) return 'Not synced yet.';
   const when = new Date(status.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   const failedCount = status.playlists.filter((p) => !p.ok).length;
@@ -50,7 +51,7 @@ export function renderSpotifyCornerTab(container) {
       shelfEl.innerHTML = `<div class="card"><p class="hint">${
         status.reason === 'not-logged-in'
           ? 'Log into Spotify in Settings, then come back here.'
-          : 'Paste one or more playlist links in Settings, click "Save & test," then come back here.'
+          : 'No playlists found in your Spotify library - add some on Spotify and hit "Sync now" above.'
       }</p></div>`;
       return;
     }

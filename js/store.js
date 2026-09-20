@@ -20,7 +20,6 @@ const DEFAULT_SETTINGS = {
   setStartedAt: null,
   autoDrift: true,
   leverOverride: null, // manual value when auto-drift is paused
-  spotifyPlaylistUrls: '', // comma/newline-separated playlist URLs or IDs
   playlistEnergy: {}, // { [playlistId]: 1-5 } - DJ-tagged mood per synced playlist, untagged = matches any mood
 };
 

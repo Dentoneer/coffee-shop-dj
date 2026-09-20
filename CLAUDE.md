@@ -29,11 +29,15 @@ Full design rationale: `docs/superpowers/specs/2026-09-16-coffee-shop-dj-design.
   button imports it directly, one click, no copy-paste.
 - `js/store.js` — `localStorage`-backed data layer (tracks, settings, auth).
 - `js/spotify.js` — Spotify Authorization Code + PKCE login, token refresh,
-  catalog search, playlist fetch. No client secret — PKCE needs none.
-- `js/spotifySync.js` — single shared cache of the DJ's playlist tracks,
-  synced once and reused by Live Set and Spotify Corner instead of each
-  screen fetching its own copy. `syncPlaylists()` / `getSyncStatus()` /
-  `onSyncChange()`.
+  catalog search, playlist fetch, `getAllUserPlaylists()` (paginated
+  `/me/playlists`). No client secret — PKCE needs none.
+- `js/spotifySync.js` — single shared cache of every track in the DJ's
+  Spotify library, auto-discovered via `getAllUserPlaylists()` (no playlist
+  links pasted in by hand), synced once and reused by Live Set and Spotify
+  Corner instead of each screen fetching its own copy. Auto-refreshes
+  itself (`startAutoRefresh()`) every ~10min plus on tab-return-after-a-
+  while, so newly added songs show up without the DJ doing anything.
+  `syncPlaylists()` / `getSyncStatus()` / `onSyncChange()`.
 - `js/spotifyCorner.js` — the Spotify Corner tab: browsable/searchable view
   of every synced playlist track, grouped by playlist.
 - `js/plan.js` — tempo-based insertion algorithm (direction-aware — see
@@ -45,18 +49,23 @@ Full design rationale: `docs/superpowers/specs/2026-09-16-coffee-shop-dj-design.
   `pickSpotifyCandidate()` in `liveset.js` is the single source for every
   live Spotify pick (auto-suggest, lookahead, Shuffle).
 - `js/app.js` — tab routing, init, OAuth redirect handling, kicks off a
-  background playlist sync on load if already logged in.
+  background playlist sync + the auto-refresh timer on load if already
+  logged in.
 
 ## Key facts
 
-- **Spotify bridge picks mix in the DJ's own playlists**: ~90% from
-  playlists configured in Settings (synced via `spotifySync.js`), ~10%
-  fresh catalog search for variety, excluding tracks already played this
-  set. There's no tempo data for either source, so nothing is
-  ranked/scored — picks are chosen by ear against a displayed
-  BPM/energy/flavor target. Every Spotify row has a Shuffle button for an
-  instant different pick with no typing, and a Change control for a
-  manual search.
+- **Spotify bridge picks mix in the DJ's own playlists**: ~90% from every
+  playlist in the DJ's Spotify library (auto-discovered and synced via
+  `spotifySync.js` — nothing configured by hand), ~10% fresh catalog search
+  for variety, excluding tracks already played this set. There's no tempo
+  data for either source, so nothing is ranked/scored — picks are chosen by
+  ear against a displayed BPM/energy/flavor target, and the query itself is
+  mood-aware (see `moodHintForEnergy`/`buildAutoQuery` in `liveset.js`).
+  Optionally, a playlist can be tagged with a 1-5 mood in Settings so
+  playlist-sourced picks prefer a matching one (e.g. a tagged "party"
+  playlist won't surface during a mellow stretch) — untagged playlists are
+  unaffected. Every Spotify row has a Shuffle button for an instant
+  different pick with no typing, and a Change control for a manual search.
 - **Guest vinyls are prioritized**: inserted only among the next 3 unplayed
   vinyl slots (not the whole remaining plan), so they play soon.
 - **Spotify's March 2026 Dev Mode migration renamed/reshaped playlist

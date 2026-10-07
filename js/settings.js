@@ -1,7 +1,7 @@
-import { Store } from './store.js?v=20261006kp';
-import { login, logout, isLoggedIn, handleRedirect, getPlaylistRawSample } from './spotify.js?v=20261006kp';
-import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20261006kp';
-import { summaryLine } from './savedSets.js?v=20261006kp';
+import { Store } from './store.js?v=20261007neon';
+import { login, logout, isLoggedIn, handleRedirect, getPlaylistRawSample } from './spotify.js?v=20261007neon';
+import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20261007neon';
+import { summaryLine } from './savedSets.js?v=20261007neon';
 
 // Tab containers are hidden (display:none), not removed, on tab-switch - so
 // unsubscribing the previous listener before subscribing a new one is
@@ -43,7 +43,7 @@ export function renderSettingsTab(container) {
 
     <div class="card">
       <h3>Saved sets</h3>
-      <p class="hint">Named snapshots you've saved from Live Set ("Save this set") — name, date, mood
+      <p class="hint">Named snapshots you've saved from Live Set ("&#128190; Save this set") — name, date, mood
         arc, duration, and a summary of what played. Saving never touches your current live set.</p>
       <div id="saved-sets-list"></div>
     </div>

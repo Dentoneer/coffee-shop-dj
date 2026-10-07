@@ -1,9 +1,8 @@
-import { Store } from './store.js?v=20261006kp';
-import { insertVinylTrack, getPlanDirection } from './plan.js?v=20261006kp';
-import { renderTrackForm } from './trackForm.js?v=20261006kp';
-import { renderMoodWave, PRESETS } from './moodWave.js?v=20261006kp';
-import { generateCrate } from './crateGenerator.js?v=20261006kp';
-import { icon } from './icons.js?v=20261006kp';
+import { Store } from './store.js?v=20261007neon';
+import { insertVinylTrack, getPlanDirection } from './plan.js?v=20261007neon';
+import { renderTrackForm } from './trackForm.js?v=20261007neon';
+import { renderMoodWave, PRESETS } from './moodWave.js?v=20261007neon';
+import { generateCrate } from './crateGenerator.js?v=20261007neon';
 
 export function renderCrateTab(container) {
   let curvePoints = PRESETS['Build up'].slice();
@@ -64,11 +63,11 @@ export function renderCrateTab(container) {
       const row = document.createElement('div');
       row.className = 'track-row';
       const bpmText = t.bpmEstimated
-        ? `<span style="color:var(--accent);">${icon('alert')} ${t.bpm} BPM (est.)</span>`
+        ? `<span style="color:var(--accent);">&#9888; ${t.bpm} BPM (est.)</span>`
         : `${t.bpm ?? '?'} BPM`;
       row.innerHTML = `
         <div class="track-meta">
-          <div class="title">${idx + 1}. ${t.artist} — ${t.title} ${t.played ? icon('check', 'played') : ''}</div>
+          <div class="title">${idx + 1}. ${t.artist} — ${t.title} ${t.played ? '&#9989;' : ''}</div>
           <div class="sub">${albumBits.length ? `${albumBits.join(' ')} &middot; ` : ''}${bpmText} &middot; energy ${t.energy}
             ${t.guestRequested ? '<span class="badge guest">guest</span>' : ''}
           </div>
@@ -148,7 +147,7 @@ export function renderCrateTab(container) {
         statusEl.textContent = result.error;
       } else {
         statusEl.textContent = `Added ${result.count} record(s) shaped to your mood wave. `
-          + `BPMs are estimates (marked "est.") - tap tempo or Shuffle any row to refine.`;
+          + `BPMs are estimates (&#9888; marked) - tap tempo or Shuffle any row to refine.`;
       }
       refreshList();
     } catch (e) {

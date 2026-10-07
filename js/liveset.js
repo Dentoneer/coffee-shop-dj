@@ -1,13 +1,12 @@
-import { Store, newId } from './store.js?v=20261006kp';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20261006kp';
-import { renderTrackForm } from './trackForm.js?v=20261006kp';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20261006kp';
-import { createTapTempo } from './tapTempo.js?v=20261006kp';
-import { syncPlaylists } from './spotifySync.js?v=20261006kp';
-import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=20261006kp';
-import { renderMoodWave, PRESETS } from './moodWave.js?v=20261006kp';
-import { generateCrate } from './crateGenerator.js?v=20261006kp';
-import { icon } from './icons.js?v=20261006kp';
+import { Store, newId } from './store.js?v=20261007neon';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20261007neon';
+import { renderTrackForm } from './trackForm.js?v=20261007neon';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20261007neon';
+import { createTapTempo } from './tapTempo.js?v=20261007neon';
+import { syncPlaylists } from './spotifySync.js?v=20261007neon';
+import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=20261007neon';
+import { renderMoodWave, PRESETS } from './moodWave.js?v=20261007neon';
+import { generateCrate } from './crateGenerator.js?v=20261007neon';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no
@@ -112,10 +111,10 @@ export function renderLiveTab(container) {
 
     <div class="card" style="padding:0.5rem 0.8rem;">
       <div class="row">
-        <button type="button" class="secondary" id="toggle-save-set">${icon('save')} Save this set</button>
-        <button type="button" class="secondary" id="toggle-open-set">${icon('folder')} Open set</button>
-        <button type="button" class="secondary" id="toggle-create-set">${icon('sparkle')} Create set</button>
-        <button type="button" class="secondary" id="reset-set-btn">${icon('refresh')} Reset set</button>
+        <button type="button" class="secondary" id="toggle-save-set">&#128190; Save this set</button>
+        <button type="button" class="secondary" id="toggle-open-set">&#128193; Open set</button>
+        <button type="button" class="secondary" id="toggle-create-set">&#10024; Create set</button>
+        <button type="button" class="secondary" id="reset-set-btn">&#128260; Reset set</button>
       </div>
       <div id="save-set-form" style="margin-top:0.5rem;"></div>
       <div id="open-set-form" style="margin-top:0.5rem;"></div>
@@ -212,7 +211,7 @@ export function renderLiveTab(container) {
   // mistaken for a considered placement.
   function bpmLabel(t) {
     return t.bpmEstimated
-      ? `<span style="color:var(--accent);">${icon('alert')} ${t.bpm} BPM (est. - tap tempo for a real transition fit)</span>`
+      ? `<span style="color:var(--accent);">&#9888; ${t.bpm} BPM (est. - tap tempo for a real transition fit)</span>`
       : `${t.bpm ?? '?'} BPM`;
   }
 
@@ -232,9 +231,9 @@ export function renderLiveTab(container) {
       const row = document.createElement('div');
       row.className = 'track-row';
       row.innerHTML = `
-        <div class="vinyl-disc">${icon('vinyl')}</div>
+        <div class="vinyl-disc">&#9835;</div>
         <div class="track-meta">
-          <div class="title">${t.artist} ${t.played ? `${icon('check', 'played')} played` : ''}</div>
+          <div class="title">${t.artist} ${t.played ? '&#9989; played' : ''}</div>
           <div class="sub">${trackLine(t)} &middot; ${bpmLabel(t)} &middot; energy ${t.energy}</div>
         </div>
       `;
@@ -365,7 +364,7 @@ export function renderLiveTab(container) {
       </div>
       <div class="row">
         <button type="button" id="mark-played-btn">Mark played</button>
-        <button type="button" class="secondary" id="shuffle-vinyl-btn" title="Swap in a random other unplayed vinyl">${icon('shuffle')} Shuffle</button>
+        <button type="button" class="secondary" id="shuffle-vinyl-btn" title="Swap in a random other unplayed vinyl">&#128256; Shuffle</button>
         <button type="button" class="secondary" id="change-vinyl-btn">Change track</button>
       </div>
       <div id="change-vinyl-mount" style="margin-top:0.6rem"></div>
@@ -401,7 +400,7 @@ export function renderLiveTab(container) {
       <div id="spotify-suggestion-row"></div>
       <div class="row" id="spotify-action-row" style="display:none;">
         <button type="button" id="spotify-play-suggestion">Play this</button>
-        <button type="button" class="secondary" id="spotify-shuffle-btn" title="Get a different suggestion">${icon('shuffle')} Shuffle</button>
+        <button type="button" class="secondary" id="spotify-shuffle-btn" title="Get a different suggestion">&#128256; Shuffle</button>
         <button type="button" class="secondary" id="spotify-change-btn">Change</button>
       </div>
       <div id="spotify-search-mount" style="margin-top:0.6rem"></div>
@@ -733,8 +732,7 @@ export function renderLiveTab(container) {
         shuffleBtn.type = 'button';
         shuffleBtn.className = 'secondary';
         shuffleBtn.title = 'Swap in a random other unplayed vinyl';
-        shuffleBtn.innerHTML = icon('shuffle');
-        shuffleBtn.setAttribute('aria-label', 'Shuffle');
+        shuffleBtn.textContent = '\u{1F500}';
         shuffleBtn.addEventListener('click', () => shuffleVinylSlot(t.id));
         row.appendChild(shuffleBtn);
         const changeBtn = document.createElement('button');
@@ -800,8 +798,7 @@ export function renderLiveTab(container) {
         shuffleBtn.type = 'button';
         shuffleBtn.className = 'secondary';
         shuffleBtn.title = 'Get a different suggestion';
-        shuffleBtn.innerHTML = icon('shuffle');
-        shuffleBtn.setAttribute('aria-label', 'Shuffle');
+        shuffleBtn.textContent = '\u{1F500}';
         shuffleBtn.addEventListener('click', async () => {
           if (!entry.afterVinylId) return;
           shuffleBtn.disabled = true;
@@ -1062,7 +1059,7 @@ export function renderLiveTab(container) {
           statusEl.textContent = result.error;
         } else {
           statusEl.textContent = `Added ${result.count} record(s) shaped to your mood wave — see them below in Full Set. `
-            + `BPMs are estimates (marked "est.") - tap tempo or Shuffle any row to refine.`;
+            + `BPMs are estimates (&#9888;) - tap tempo or Shuffle any row to refine.`;
           refreshTurn();
         }
       } catch (e) {

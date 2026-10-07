@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-10-06 (K-pop color pass)_
+_Last updated: 2026-10-07 (reverted to neon cyberpunk theme)_
 
 ## Current status
 
@@ -245,7 +245,18 @@ rounded corners on cards with a rainbow gradient top-border, a soft
 sparkle-dot background, `Baloo 2` + `Poppins` from Google Fonts. Superseded
 two days later by the Barbie reskin below, kept here for history.
 
-## K-pop color pass (current colors, 2026-10-06)
+## Reverted to the original neon cyberpunk theme (current, 2026-10-07)
+
+User asked to go back to "the neon colors we had before all of these
+changes". Restored `css/`, `index.html` and `js/` exactly as of 3bf0463
+(dark purple bg with grid lines, hot pink `#ff2ec4` / cyan `#00eaff` /
+violet `#8a3ffc` glow, Segoe UI, emoji labels) and deleted `js/icons.js`.
+Every commit after 3bf0463 was theme-only (verified by diff: only emoji to
+icon swaps and cache tags in JS), so no app logic was lost. Cache-bust tag
+`20261007neon`. Everything below about the K-pop pass, missyCoco, Barbie and
+the first K-pop reskin is history only; none of it is live.
+
+## K-pop color pass (superseded, 2026-10-06)
 
 Colors only - layout, fonts (Playfair/Inter/Raleway/Allura) and the line
 icons from the missyCoco reskin below are unchanged. `css/style.css` `:root`

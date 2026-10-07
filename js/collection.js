@@ -1,4 +1,4 @@
-import { icon } from './icons.js?v=20260920mc';
+import { icon } from './icons.js?v=20261006kp';
 // Vinyl Corner: a cozy, browsable, alphabetized view of the full personal
 // collection (data/collection.json). Separate from Crate Builder, which is
 // only the subset tagged with tempo/energy for a specific live set.

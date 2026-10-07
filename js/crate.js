@@ -1,9 +1,9 @@
-import { Store } from './store.js?v=20260920mc';
-import { insertVinylTrack, getPlanDirection } from './plan.js?v=20260920mc';
-import { renderTrackForm } from './trackForm.js?v=20260920mc';
-import { renderMoodWave, PRESETS } from './moodWave.js?v=20260920mc';
-import { generateCrate } from './crateGenerator.js?v=20260920mc';
-import { icon } from './icons.js?v=20260920mc';
+import { Store } from './store.js?v=20261006kp';
+import { insertVinylTrack, getPlanDirection } from './plan.js?v=20261006kp';
+import { renderTrackForm } from './trackForm.js?v=20261006kp';
+import { renderMoodWave, PRESETS } from './moodWave.js?v=20261006kp';
+import { generateCrate } from './crateGenerator.js?v=20261006kp';
+import { icon } from './icons.js?v=20261006kp';
 
 export function renderCrateTab(container) {
   let curvePoints = PRESETS['Build up'].slice();

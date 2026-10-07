@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-09-20 (missyCoco moodboard reskin)_
+_Last updated: 2026-10-06 (K-pop color pass)_
 
 ## Current status
 
@@ -245,7 +245,20 @@ rounded corners on cards with a rainbow gradient top-border, a soft
 sparkle-dot background, `Baloo 2` + `Poppins` from Google Fonts. Superseded
 two days later by the Barbie reskin below, kept here for history.
 
-## missyCoco moodboard reskin (current theme)
+## K-pop color pass (current colors, 2026-10-06)
+
+Colors only - layout, fonts (Playfair/Inter/Raleway/Allura) and the line
+icons from the missyCoco reskin below are unchanged. `css/style.css` `:root`
+remapped to hot pink `#d1166e` (`--accent`/`--vinyl`), electric violet
+`#6d35d4` (`--accent2`/`--spotify`), lavender `#ece2ff` (`--sage`, selected
+states), mint/sky glows in the page background, deep plum `#2b1740` text on
+a lilac-white page. New `--grad`/`--grad-hover` (pink to violet) fill
+primary buttons and the active tab. Cache-bust tag `20261006kp`. Verified with a
+headless screenshot of Live Set (desktop). Narrow headless screenshots crop
+on the right before and after this change, so that is a screenshot-tool
+quirk, not the CSS.
+
+## missyCoco moodboard reskin (layout/type still current; colors superseded above)
 
 Restyled from a moodboard the user supplied for their other project,
 "missyCoco" (Asian-friendly aesthetic clinics in LA) - the palette, type, and

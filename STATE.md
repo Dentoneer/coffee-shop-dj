@@ -378,8 +378,10 @@ screenshots) that text stays legible against the new white/pink cards.
       done and designer's calls added to the spec. Waiting on the DJ: how
       strict vinyl-to-Spotify matching is for Save (same album recording vs
       same song by same artist) -> DJ chose exact same version only (same
-      album). Spec committed (8feedd6) and handed to the DJ; waiting on
-      approval, then writing-plans. Nothing built yet.
+      album). Spec approved by the DJ ("build"). Implementation plan
+      written: `docs/superpowers/plans/2026-11-01-seed-vibe-sets.md`
+      (11 tasks, c683a4d). Waiting on the DJ to review the plan and pick
+      Native vs Subagent-driven execution. Nothing built yet.
 
 - [x] Shame Boys reskin committed and pushed to `master` (6d623fc,
       2026-11-01); Pages redeploys automatically, hard-refresh to see it.

@@ -10,6 +10,8 @@ const KEYS = {
   liveState: 'csdj.liveState',
   plannedSpotify: 'csdj.plannedSpotify',
   savedSets: 'csdj.savedSets',
+  vibePool: 'csdj.vibePool',
+  liveSpotifyPlaylist: 'csdj.liveSpotifyPlaylist',
 };
 
 const DEFAULT_SETTINGS = {
@@ -20,6 +22,7 @@ const DEFAULT_SETTINGS = {
   setStartedAt: null,
   autoDrift: true,
   leverOverride: null, // manual value when auto-drift is paused
+  planMode: 'alternate', // 'alternate' (mood-wave: strict V/S gaps) | 'sequence' (vibe set: explicit V+S order in planOrder)
   lastfmApiKey: '', // DJ's own free Last.fm API key (vibe source), localStorage only
   playlistEnergy: {}, // { [playlistId]: 1-5 } - DJ-tagged mood per synced playlist, untagged = matches any mood
 };
@@ -120,6 +123,28 @@ export const Store = {
     localStorage.removeItem(KEYS.planOrder);
     localStorage.removeItem(KEYS.liveState);
     localStorage.removeItem(KEYS.plannedSpotify);
+    localStorage.removeItem(KEYS.vibePool);
+    localStorage.removeItem(KEYS.liveSpotifyPlaylist);
+  },
+
+  // A vibe set's unused candidates, consumed by Shuffle: { spotify:
+  // SpotifyResult[], vinyl: [{record, score}] } (best first).
+  getVibePool() {
+    return readJSON(KEYS.vibePool, { spotify: [], vinyl: [] });
+  },
+  saveVibePool(pool) {
+    writeJSON(KEYS.vibePool, pool);
+  },
+
+  // Spotify playlist the live set was last saved to, so re-saving updates
+  // it instead of creating another. Cleared whenever the live set is
+  // replaced (generate / open / reset).
+  getLiveSpotifyPlaylist() {
+    return localStorage.getItem(KEYS.liveSpotifyPlaylist) || null;
+  },
+  setLiveSpotifyPlaylist(id) {
+    if (id) localStorage.setItem(KEYS.liveSpotifyPlaylist, id);
+    else localStorage.removeItem(KEYS.liveSpotifyPlaylist);
   },
 
   // Planned (not-yet-played) Spotify picks for upcoming bridge slots,
@@ -171,6 +196,7 @@ export const Store = {
       liveState: Store.getLiveState(),
       plannedSpotify: Store.getPlannedSpotifyMap(),
       savedSets: Store.getSavedSets(),
+      vibePool: Store.getVibePool(),
       exportedAt: new Date().toISOString(),
     };
   },
@@ -181,6 +207,7 @@ export const Store = {
     if (data.liveState) Store.saveLiveState(data.liveState);
     if (data.plannedSpotify) writeJSON(KEYS.plannedSpotify, data.plannedSpotify);
     if (data.savedSets) writeJSON(KEYS.savedSets, data.savedSets);
+    if (data.vibePool) writeJSON(KEYS.vibePool, data.vibePool);
   },
 };
 

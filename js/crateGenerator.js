@@ -7,7 +7,7 @@ import { sampleEnergyAtFraction, energyToBpm } from './moodWave.js?v=20261101sha
 import { pickSongForRecord } from './songPicker.js?v=20261101shame';
 
 let cachedCollection = null;
-async function loadCollection() {
+export async function loadCollection() {
   if (cachedCollection) return cachedCollection;
   const res = await fetch('data/collection.json');
   cachedCollection = await res.json();

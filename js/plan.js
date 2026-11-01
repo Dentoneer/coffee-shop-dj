@@ -152,6 +152,52 @@ export function getBridgeTarget(lastPlayed, nextVinyl, settings) {
   };
 }
 
+/**
+ * 'alternate' = mood-wave sets: planOrder is vinyl only, Spotify slots are
+ * implicit gaps between vinyls (strict V/S alternation). 'sequence' = vibe
+ * sets: planOrder holds every song, vinyl and Spotify, in play order.
+ */
+export function getPlanMode(settings) {
+  return settings.planMode === 'sequence' ? 'sequence' : 'alternate';
+}
+
+/** Sequence mode: first unplayed song in planOrder, any source. */
+export function getNextInSequence(planOrder, allTracks) {
+  const byId = new Map(allTracks.map((t) => [t.id, t]));
+  for (const id of planOrder) {
+    const t = byId.get(id);
+    if (t && !t.played) return t;
+  }
+  return null;
+}
+
+/** Sequence mode: slot a new song in right after whatever is up next, so it plays soon. */
+export function insertSoon(trackId, planOrder, allTracks) {
+  const next = getNextInSequence(planOrder, allTracks);
+  if (!next) return [...planOrder, trackId];
+  const out = planOrder.slice();
+  out.splice(out.indexOf(next.id) + 1, 0, trackId);
+  return out;
+}
+
+/** Where a newly added vinyl (guest / Crate Builder) goes, for either mode. */
+export function placeNewVinyl(track, planOrder, allTracks, settings) {
+  if (getPlanMode(settings) === 'sequence') return insertSoon(track.id, planOrder, allTracks);
+  return insertVinylTrack(track, planOrder, allTracks, getPlanDirection(settings));
+}
+
+/**
+ * Before a mood-wave generate: a vibe set can't take appended mood-wave
+ * picks, so ask (confirmFn) and replace it. Returns false if the DJ cancels.
+ */
+export function leaveSequenceMode(confirmFn) {
+  if (getPlanMode(Store.getSettings()) !== 'sequence') return true;
+  if (!confirmFn()) return false;
+  Store.resetSetData();
+  Store.updateSettings({ planMode: 'alternate', setStartedAt: null, leverOverride: null, autoDrift: true });
+  return true;
+}
+
 /** Recomputes and persists everything the Live Set view needs to render. */
 export function computeLiveSnapshot() {
   const tracks = Store.getTracks();
@@ -162,7 +208,9 @@ export function computeLiveSnapshot() {
   const nextVinyl = getNextVinyl(planOrder, tracks);
   const bridgeTarget = getBridgeTarget(lastPlayed, nextVinyl, settings);
   const leverValue = getLeverValue(settings);
-  return { tracks, planOrder, settings, lastPlayed, turn, nextVinyl, bridgeTarget, leverValue };
+  const mode = getPlanMode(settings);
+  const nextItem = mode === 'sequence' ? getNextInSequence(planOrder, tracks) : null;
+  return { tracks, planOrder, settings, lastPlayed, turn, nextVinyl, bridgeTarget, leverValue, mode, nextItem };
 }
 
 export function markPlayed(trackId) {

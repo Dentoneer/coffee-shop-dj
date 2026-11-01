@@ -1,5 +1,5 @@
 import { Store, newId } from './store.js?v=20261101shame';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20261101shame';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection, placeNewVinyl, leaveSequenceMode } from './plan.js?v=20261101shame';
 import { renderTrackForm } from './trackForm.js?v=20261101shame';
 import { searchTracks, isLoggedIn } from './spotify.js?v=20261101shame';
 import { createTapTempo } from './tapTempo.js?v=20261101shame';
@@ -957,8 +957,7 @@ export function renderLiveTab(container) {
       guestRequested: true,
       title: "Guest's vinyl request",
       onSave: (track) => {
-        const direction = getPlanDirection(Store.getSettings());
-        const newOrder = insertVinylTrack(track, Store.getPlanOrder(), Store.getTracks(), direction);
+        const newOrder = placeNewVinyl(track, Store.getPlanOrder(), Store.getTracks(), Store.getSettings());
         Store.savePlanOrder(newOrder);
         refreshTurn();
       },
@@ -1062,6 +1061,7 @@ export function renderLiveTab(container) {
     createSetFormEl.querySelector('#cs-generate').addEventListener('click', async () => {
       const statusEl = createSetFormEl.querySelector('#cs-status');
       const count = Math.max(1, Math.min(40, Number(createSetFormEl.querySelector('#cs-count').value) || 12));
+      if (!leaveSequenceMode(() => confirm('Replace the current vibe set with a new mood-wave set?'))) return;
       statusEl.textContent = 'Picking records…';
       try {
         const result = await generateCrate(count, curvePoints, (done, total) => {
@@ -1091,7 +1091,7 @@ export function renderLiveTab(container) {
     // tracks - resetSetData() alone leaves setStartedAt stale since that
     // lives in settings (which resetSetData deliberately preserves for
     // the Settings-tab version of this button).
-    Store.updateSettings({ setStartedAt: null, leverOverride: null, autoDrift: true });
+    Store.updateSettings({ setStartedAt: null, leverOverride: null, autoDrift: true, planMode: 'alternate' });
     container.querySelector('#reset-set-status').textContent = 'Set reset — ready for a fresh crate.';
     refreshLever();
     refreshTurn();

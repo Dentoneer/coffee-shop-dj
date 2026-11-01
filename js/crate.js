@@ -1,5 +1,5 @@
 import { Store } from './store.js?v=20261101shame';
-import { insertVinylTrack, getPlanDirection } from './plan.js?v=20261101shame';
+import { placeNewVinyl, leaveSequenceMode } from './plan.js?v=20261101shame';
 import { renderTrackForm } from './trackForm.js?v=20261101shame';
 import { renderMoodWave, PRESETS } from './moodWave.js?v=20261101shame';
 import { generateCrate } from './crateGenerator.js?v=20261101shame';
@@ -81,7 +81,6 @@ export function renderCrateTab(container) {
     if (!Array.isArray(incoming)) throw new Error('Expected a JSON array of tracks, or {tracks: [...]}.');
     let order = Store.getPlanOrder();
     const existing = Store.getTracks();
-    const direction = getPlanDirection(Store.getSettings());
     incoming.forEach((raw) => {
       const track = {
         id: raw.id || crypto.randomUUID(),
@@ -104,7 +103,7 @@ export function renderCrateTab(container) {
       Store.addTrack(track);
       existing.push(track);
       if (track.source === 'vinyl') {
-        order = insertVinylTrack(track, order, existing, direction);
+        order = placeNewVinyl(track, order, existing, Store.getSettings());
       }
     });
     Store.savePlanOrder(order);
@@ -116,8 +115,7 @@ export function renderCrateTab(container) {
     guestRequested: false,
     title: 'Add a vinyl to your crate',
     onSave: (track) => {
-      const direction = getPlanDirection(Store.getSettings());
-      const newOrder = insertVinylTrack(track, Store.getPlanOrder(), Store.getTracks(), direction);
+      const newOrder = placeNewVinyl(track, Store.getPlanOrder(), Store.getTracks(), Store.getSettings());
       Store.savePlanOrder(newOrder);
       refreshList();
     },
@@ -140,6 +138,7 @@ export function renderCrateTab(container) {
   container.querySelector('#build-crate-btn').addEventListener('click', async () => {
     const statusEl = container.querySelector('#build-crate-status');
     const count = Math.max(1, Math.min(40, Number(container.querySelector('#bc-count').value) || 12));
+    if (!leaveSequenceMode(() => confirm('Replace the current vibe set with a new mood-wave crate?'))) return;
     statusEl.textContent = 'Picking records…';
     try {
       const result = await generateCrate(count, curvePoints, (done, total) => {

@@ -48,6 +48,9 @@ export function buildSnapshot(name) {
     artists,
     tracks,
     planOrder,
+    planMode: settings.planMode === 'sequence' ? 'sequence' : 'alternate',
+    plannedSpotify: Store.getPlannedSpotifyMap(),
+    spotifyPlaylistId: null, // set by Save to Spotify after the playlist is written
   };
 }
 
@@ -73,9 +76,13 @@ export function loadSavedSet(set) {
     setStartedAt: null,
     leverOverride: null,
     autoDrift: true,
+    planMode: set.planMode === 'sequence' ? 'sequence' : 'alternate', // old snapshots predate vibe sets
   });
   Store.clearAllPlannedSpotify();
+  Object.entries(set.plannedSpotify || {}).forEach(([afterId, pick]) => Store.setPlannedSpotifyFor(afterId, pick));
   Store.saveLiveState({ lastPlayedTrackId: null, turn: 'vinyl' });
+  Store.saveVibePool({ spotify: [], vinyl: [] });
+  Store.setLiveSpotifyPlaylist(null);
 }
 
 function moodWord(v) {

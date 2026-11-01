@@ -8,6 +8,7 @@ import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=2026
 import { renderMoodWave, PRESETS } from './moodWave.js?v=20261101shame';
 import { generateCrate } from './crateGenerator.js?v=20261101shame';
 import { pickSongForRecord } from './songPicker.js?v=20261101shame';
+import { renderSequenceTurn, renderSequenceList } from './sequenceView.js?v=20261101shame';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no
@@ -149,6 +150,8 @@ export function renderLiveTab(container) {
   function refreshLever() {
     const settings = Store.getSettings();
     const snap = computeLiveSnapshot();
+    // Vibe sets take their mood from the seed songs, not the lever.
+    leverSlider.closest('.card').style.display = snap.mode === 'sequence' ? 'none' : '';
     leverSlider.value = snap.leverValue;
     leverAutoDrift.checked = settings.autoDrift;
     container.querySelector('#lever-value').textContent = `— ${snap.leverValue.toFixed(1)} / 5`;
@@ -344,7 +347,7 @@ export function renderLiveTab(container) {
       // A changed tempo can change where this track belongs in the plan -
       // pull it out and re-insert at its new best slot rather than leaving
       // it wherever it happened to land under the old (often default) BPM.
-      if (newBpm !== track.bpm && !track.played) {
+      if (newBpm !== track.bpm && !track.played && Store.getSettings().planMode !== 'sequence') {
         const withoutThis = Store.getPlanOrder().filter((id) => id !== track.id);
         const direction = getPlanDirection(Store.getSettings());
         const reordered = insertVinylTrack(updated, withoutThis, Store.getTracks(), direction);
@@ -918,6 +921,13 @@ export function renderLiveTab(container) {
     refreshLever();
     const snap = computeLiveSnapshot();
     const turnCard = container.querySelector('#turn-card');
+    if (snap.mode === 'sequence') {
+      const ctx = { refreshTurn, renderVinylEditForm };
+      renderSequenceTurn(turnCard, snap, ctx);
+      renderGuestCrate();
+      renderSequenceList(container.querySelector('#full-list'), snap, ctx);
+      return;
+    }
     if (snap.turn === 'vinyl') renderVinylTurn(turnCard, snap);
     else renderSpotifyTurn(turnCard, snap);
     renderGuestCrate();

@@ -367,6 +367,13 @@ screenshots) that text stays legible against the new white/pink cards.
 
 ## Open threads / next steps
 
+- [x] Shame Boys reskin committed and pushed to `master` (6d623fc,
+      2026-11-01); Pages redeploys automatically, hard-refresh to see it.
+- [ ] Shame Boys reskin only screenshot-checked on Live Set (empty set,
+      1200px + 400px). Still to eyeball: Crate Builder (mood wave SVG on the
+      new palette), Vinyl Corner (ring-disc icons), Spotify Corner, Settings,
+      and a live Spotify session with album art.
+
 - [x] missyCoco reskin committed and pushed to `master` (29b3741,
       2026-09-20); GitHub Pages redeploys automatically. Pages caches assets
       ~10 min, so a hard-refresh may be needed to see it.

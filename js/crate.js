@@ -142,7 +142,9 @@ export function renderCrateTab(container) {
     const count = Math.max(1, Math.min(40, Number(container.querySelector('#bc-count').value) || 12));
     statusEl.textContent = 'Picking records…';
     try {
-      const result = await generateCrate(count, curvePoints);
+      const result = await generateCrate(count, curvePoints, (done, total) => {
+        statusEl.textContent = `Picking songs… ${done}/${total}`;
+      });
       if (result.error) {
         statusEl.textContent = result.error;
       } else {

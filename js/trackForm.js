@@ -2,7 +2,8 @@
 // Live Set's "add guest vinyl" flow. Artist + album are the record; song
 // title/track number are optional and can come from a direct Spotify
 // track search (one click - track results already carry album + track
-// number) or be left blank for "DJ picks by ear." Picking a Spotify result
+// number) or be left blank, in which case songPicker names one (Last.fm /
+// Spotify tracklist; "(DJ's choice)" only if both fail). Picking a Spotify result
 // saves the track immediately - no separate "now click Add" step, since
 // that extra step was repeatedly missed live. Tempo defaults to a neutral
 // 100 BPM if not tapped yet; fix it later via the "Change" editor.
@@ -10,6 +11,7 @@
 import { FLAVOR_TAGS, newId, Store } from './store.js?v=20261101shame';
 import { createTapTempo } from './tapTempo.js?v=20261101shame';
 import { searchTracks, isLoggedIn } from './spotify.js?v=20261101shame';
+import { pickSongForRecord } from './songPicker.js?v=20261101shame';
 
 const DEFAULT_BPM = 100;
 
@@ -109,7 +111,7 @@ export function renderTrackForm(container, opts) {
     if (resultsEl) resultsEl.innerHTML = '';
   }
 
-  function saveTrack() {
+  async function saveTrack() {
     const artist = $('#tf-artist').value.trim();
     const album = source === 'vinyl' ? $('#tf-album').value.trim() : '';
     const songTitle = $('#tf-title').value.trim();
@@ -125,14 +127,19 @@ export function renderTrackForm(container, opts) {
     }
 
     const usedDefaultBpm = source === 'vinyl' && currentBpm == null;
-    const displayTitle = songTitle || "(DJ's choice)";
+    let picked = null;
+    if (source === 'vinyl' && !songTitle) {
+      statusEl.textContent = 'Picking a song…';
+      picked = await pickSongForRecord({ artist, album });
+    }
+    const displayTitle = songTitle || picked?.title || "(DJ's choice)";
 
     const track = {
       id: newId(),
       title: source === 'vinyl' ? displayTitle : songTitle,
       artist,
       album: source === 'vinyl' ? album : null,
-      trackNumber,
+      trackNumber: trackNumber ?? picked?.trackNumber ?? null,
       source,
       bpm: currentBpm ?? DEFAULT_BPM,
       bpmEstimated: usedDefaultBpm,
@@ -142,12 +149,12 @@ export function renderTrackForm(container, opts) {
       played: false,
       playedAt: null,
       addedAt: Date.now(),
-      spotifyArt: spotifyMatch?.albumArt || null,
-      spotifyUri: spotifyMatch?.uri || null,
+      spotifyArt: spotifyMatch?.albumArt || picked?.spotifyArt || null,
+      spotifyUri: spotifyMatch?.uri || picked?.spotifyUri || null,
     };
     Store.addTrack(track);
     statusEl.textContent = (source === 'vinyl'
-      ? `Added "${album}" — ${artist}${songTitle ? ` (${songTitle})` : ''}.`
+      ? `Added "${album}" — ${artist} (${displayTitle}).`
       : `Added "${songTitle}" — ${artist}.`)
       + (usedDefaultBpm ? ` (BPM defaulted to ${DEFAULT_BPM} — tap tempo or use Change to fix it.)` : '');
     onSave && onSave(track);

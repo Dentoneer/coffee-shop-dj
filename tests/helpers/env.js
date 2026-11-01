@@ -22,7 +22,7 @@ export function mockFetch(fn) {
 export function installEnv() {
   globalThis.localStorage = new MemoryStorage();
   globalThis.fetch = async (input, init = {}) => {
-    const url = new URL(typeof input === 'string' ? input : input.url);
+    const url = new URL(typeof input === 'string' ? input : input.url, 'http://localhost/');
     fetchCalls.push({ url, init, at: Date.now() });
     const { status = 200, json = {} } = await handler(url, init);
     return {
@@ -53,10 +53,11 @@ export function setSettings(patch) {
 }
 
 /** Route a request by host: { lastfm: (url) => ..., spotify: (url, init) => ... }. */
-export function routeByHost({ lastfm, spotify }) {
+export function routeByHost({ lastfm, spotify, local }) {
   mockFetch((url, init) => {
     if (url.host === 'ws.audioscrobbler.com' && lastfm) return lastfm(url, init);
     if (url.host === 'api.spotify.com' && spotify) return spotify(url, init);
+    if (url.host === 'localhost' && local) return local(url, init);
     return { status: 404, json: { error: 'unrouted ' + url.href } };
   });
 }

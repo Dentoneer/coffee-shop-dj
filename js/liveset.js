@@ -7,6 +7,7 @@ import { syncPlaylists } from './spotifySync.js?v=20261101shame';
 import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=20261101shame';
 import { renderMoodWave, PRESETS } from './moodWave.js?v=20261101shame';
 import { generateCrate } from './crateGenerator.js?v=20261101shame';
+import { pickSongForRecord } from './songPicker.js?v=20261101shame';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no
@@ -317,11 +318,20 @@ export function renderLiveTab(container) {
         resultsEl.innerHTML = `<p class="hint">Search failed: ${e.message}</p>`;
       }
     });
-    mountEl.querySelector('#ve-save').addEventListener('click', () => {
+    mountEl.querySelector('#ve-save').addEventListener('click', async () => {
       const artist = mountEl.querySelector('#ve-artist').value.trim() || track.artist;
       const album = mountEl.querySelector('#ve-album').value.trim() || track.album;
-      const title = mountEl.querySelector('#ve-title').value.trim() || "(DJ's choice)";
-      const tn = mountEl.querySelector('#ve-tracknum').value.trim();
+      let title = mountEl.querySelector('#ve-title').value.trim();
+      let tn = mountEl.querySelector('#ve-tracknum').value.trim();
+      if (!title) {
+        // Blank song -> name one rather than leaving "(DJ's choice)".
+        const saveBtn = mountEl.querySelector('#ve-save');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Picking a song…';
+        const picked = await pickSongForRecord({ artist, album });
+        title = picked?.title || "(DJ's choice)";
+        if (!tn && picked?.trackNumber != null) tn = String(picked.trackNumber);
+      }
       const newBpm = editedBpm ?? track.bpm;
       const updated = Store.updateTrack(track.id, {
         artist,
@@ -1054,7 +1064,9 @@ export function renderLiveTab(container) {
       const count = Math.max(1, Math.min(40, Number(createSetFormEl.querySelector('#cs-count').value) || 12));
       statusEl.textContent = 'Picking records…';
       try {
-        const result = await generateCrate(count, curvePoints);
+        const result = await generateCrate(count, curvePoints, (done, total) => {
+          statusEl.textContent = `Picking songs… ${done}/${total}`;
+        });
         if (result.error) {
           statusEl.textContent = result.error;
         } else {

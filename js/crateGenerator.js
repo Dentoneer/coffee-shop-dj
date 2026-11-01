@@ -4,6 +4,7 @@
 
 import { Store, newId } from './store.js?v=20261101shame';
 import { sampleEnergyAtFraction, energyToBpm } from './moodWave.js?v=20261101shame';
+import { pickSongForRecord } from './songPicker.js?v=20261101shame';
 
 let cachedCollection = null;
 async function loadCollection() {
@@ -18,9 +19,12 @@ async function loadCollection() {
  * collection, shapes each one's BPM/energy to where it falls on
  * `curvePoints` (a 6-point mood wave, see moodWave.js), and appends them
  * to the live plan in that order (not tempo-sorted - the curve can go up
- * and down on purpose). Returns { count, error }.
+ * and down on purpose). Each record gets a real song via pickSongForRecord
+ * ("(DJ's choice)" only if nothing can be found); onProgress(done, total)
+ * reports per-record progress since that lookup is network-bound.
+ * Returns { count, error }.
  */
-export async function generateCrate(count, curvePoints) {
+export async function generateCrate(count, curvePoints, onProgress = () => {}) {
   const collection = await loadCollection();
   const existing = Store.getTracks();
   const already = new Set(existing.filter((t) => t.source === 'vinyl').map((t) => `${t.artist}|${t.album}`.toLowerCase()));
@@ -40,15 +44,18 @@ export async function generateCrate(count, curvePoints) {
 
   let order = Store.getPlanOrder();
   const tracks = Store.getTracks();
-  picks.forEach((record, i) => {
+  for (let i = 0; i < picks.length; i++) {
+    const record = picks[i];
+    const song = await pickSongForRecord(record);
+    onProgress(i + 1, picks.length);
     const frac = picks.length > 1 ? i / (picks.length - 1) : 0;
     const energy = sampleEnergyAtFraction(curvePoints, frac);
     const track = {
       id: newId(),
-      title: "(DJ's choice)",
+      title: song?.title || "(DJ's choice)",
       artist: record.artist,
       album: record.album,
-      trackNumber: null,
+      trackNumber: song?.trackNumber ?? null,
       source: 'vinyl',
       bpm: energyToBpm(energy),
       bpmEstimated: true,
@@ -58,13 +65,13 @@ export async function generateCrate(count, curvePoints) {
       played: false,
       playedAt: null,
       addedAt: Date.now(),
-      spotifyArt: null,
-      spotifyUri: null,
+      spotifyArt: song?.spotifyArt || null,
+      spotifyUri: song?.spotifyUri || null,
     };
     Store.addTrack(track);
     tracks.push(track);
     order = [...order, track.id];
-  });
+  }
   Store.savePlanOrder(order);
   return { count: picks.length, error: null };
 }

@@ -20,6 +20,7 @@ const DEFAULT_SETTINGS = {
   setStartedAt: null,
   autoDrift: true,
   leverOverride: null, // manual value when auto-drift is paused
+  lastfmApiKey: '', // DJ's own free Last.fm API key (vibe source), localStorage only
   playlistEnergy: {}, // { [playlistId]: 1-5 } - DJ-tagged mood per synced playlist, untagged = matches any mood
 };
 

@@ -4,7 +4,8 @@ import { renderTrackForm } from './trackForm.js?v=20261101shame';
 import { searchTracks, isLoggedIn } from './spotify.js?v=20261101shame';
 import { createTapTempo } from './tapTempo.js?v=20261101shame';
 import { syncPlaylists } from './spotifySync.js?v=20261101shame';
-import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=20261101shame';
+import { loadSavedSet, summaryLine } from './savedSets.js?v=20261101shame';
+import { saveSetEverywhere } from './spotifySave.js?v=20261101shame';
 import { renderMoodWave, PRESETS } from './moodWave.js?v=20261101shame';
 import { generateCrate } from './crateGenerator.js?v=20261101shame';
 import { pickSongForRecord } from './songPicker.js?v=20261101shame';
@@ -1007,10 +1008,22 @@ export function renderLiveTab(container) {
       <p class="hint" id="ss-status"></p>
     `;
     saveSetFormEl.querySelector('#ss-cancel').addEventListener('click', closeSaveSetForm);
-    saveSetFormEl.querySelector('#ss-save').addEventListener('click', () => {
+    saveSetFormEl.querySelector('#ss-save').addEventListener('click', async () => {
       const name = saveSetFormEl.querySelector('#ss-name').value;
-      const set = saveCurrentSet(name);
-      saveSetFormEl.innerHTML = `<p class="hint">Saved as "${set.name}". See it any time under Settings → Saved sets.</p>`;
+      saveSetFormEl.querySelector('#ss-save').disabled = true;
+      saveSetFormEl.querySelector('#ss-status').textContent = 'Saving…';
+      const { set, spotify, reason, error } = await saveSetEverywhere(name);
+      let msg;
+      if (spotify) {
+        const missing = spotify.skippedVinyl ? ` (${spotify.skippedVinyl} vinyl not found on Spotify)` : '';
+        msg = `Saved "${set.name}". Spotify playlist: ${spotify.added} of ${spotify.total} songs${missing}. `
+          + `<a href="${spotify.url}" target="_blank" rel="noopener">Open in Spotify</a>`;
+      } else if (reason === 'error') {
+        msg = `Saved "${set.name}" in the app; Spotify save failed: ${error.message}`;
+      } else {
+        msg = `Saved "${set.name}" in the app. To also save it to Spotify, log out and back in to Spotify in Settings.`;
+      }
+      saveSetFormEl.innerHTML = `<p class="hint">${msg}</p>`;
       saveSetFormShown = false;
     });
   });

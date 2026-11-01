@@ -1,5 +1,5 @@
 import { Store } from './store.js?v=20261101shame';
-import { login, logout, isLoggedIn, handleRedirect, getPlaylistRawSample } from './spotify.js?v=20261101shame';
+import { login, logout, isLoggedIn, hasScope, handleRedirect, getPlaylistRawSample } from './spotify.js?v=20261101shame';
 import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20261101shame';
 import { summaryLine } from './savedSets.js?v=20261101shame';
 import { checkLastfmKey } from './lastfm.js?v=20261101shame';
@@ -101,7 +101,9 @@ export function renderSettingsTab(container) {
   function refreshSpotifyStatus() {
     const statusEl = container.querySelector('#s-spotify-status');
     if (isLoggedIn()) {
-      statusEl.innerHTML = `<p class="hint">Logged in.</p><button type="button" class="secondary" id="s-logout">Log out</button>`;
+      const scopeNote = hasScope('playlist-modify-private') ? ''
+        : '<p class="hint">This login is missing playlist permission, so "Save this set" cannot save to Spotify yet — log out and in again (one time).</p>';
+      statusEl.innerHTML = `<p class="hint">Logged in.</p>${scopeNote}<button type="button" class="secondary" id="s-logout">Log out</button>`;
       statusEl.querySelector('#s-logout').addEventListener('click', () => { logout(); refreshSpotifyStatus(); });
     } else {
       statusEl.innerHTML = `<button type="button" id="s-login">Log into Spotify</button>`;
@@ -212,6 +214,7 @@ export function renderSettingsTab(container) {
           <div style="flex:1;">
             <div class="title" style="font-weight:bold;">${set.name}</div>
             <div class="hint">${summaryLine(set)}</div>
+            ${set.spotifyPlaylistUrl ? `<div class="hint"><a href="${set.spotifyPlaylistUrl}" target="_blank" rel="noopener">Open in Spotify</a></div>` : ''}
             ${set.artists.length ? `<div class="hint">${set.artists.slice(0, 8).join(', ')}${set.artists.length > 8 ? ` +${set.artists.length - 8} more` : ''}</div>` : ''}
           </div>
           <div style="flex:none;display:flex;flex-direction:column;gap:0.3rem;">

@@ -1,6 +1,7 @@
 // Spotify Authorization Code + PKCE, entirely client-side. No secret —
 // that's the point of PKCE for a public static site. Used only for catalog
-// search (track lookup, album art); no playback control, no audio-features.
+// search (track lookup, album art) and saving sets as private playlists; no
+// playback control, no audio-features.
 
 import { Store } from './store.js?v=20261101shame';
 
@@ -52,8 +53,9 @@ export async function login() {
     code_challenge_method: 'S256',
     code_challenge: challenge,
     // playlist-read-*: lets the Live Set bridge pull from the DJ's own
-    // playlists instead of only cold catalog search.
-    scope: 'playlist-read-private playlist-read-collaborative',
+    // playlists instead of only cold catalog search. playlist-modify-*:
+    // "Save this set" also writes the set to a (private) Spotify playlist.
+    scope: 'playlist-read-private playlist-read-collaborative playlist-modify-private playlist-modify-public',
     // Without this, Spotify silently re-issues a token on whatever scope
     // was already approved if the app was ever authorized before, with no
     // visible prompt - so adding a new scope later never actually reaches
@@ -94,6 +96,7 @@ export async function handleRedirect() {
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
     expiresAt: Date.now() + data.expires_in * 1000,
+    scope: data.scope || '',
   });
   Store.clearPkceVerifier();
 
@@ -123,6 +126,7 @@ async function refresh() {
     accessToken: data.access_token,
     refreshToken: data.refresh_token || auth.refreshToken,
     expiresAt: Date.now() + data.expires_in * 1000,
+    scope: data.scope || auth.scope || '',
   });
 }
 
@@ -131,6 +135,50 @@ async function getValidToken() {
   if (!auth) throw new Error('Not logged into Spotify.');
   if (auth.expiresAt <= Date.now() + 5000) await refresh();
   return Store.getSpotifyAuth().accessToken;
+}
+
+/** Whether the current login granted `name` (logins from before a scope was added lack it). */
+export function hasScope(name) {
+  const scope = Store.getSpotifyAuth()?.scope;
+  return typeof scope === 'string' && scope.split(' ').includes(name);
+}
+
+async function apiWrite(method, path, body) {
+  const token = await getValidToken();
+  return fetch(`${API_BASE}${path}`, {
+    method,
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+/** New private playlist in the DJ's account. */
+export async function createPlaylist(name) {
+  const res = await apiWrite('POST', '/me/playlists', { name, public: false, description: 'Saved from Coffee Shop DJ' });
+  if (!res.ok) throw new Error(`Spotify playlist create failed: ${res.status}`);
+  const data = await res.json();
+  return { id: data.id, url: data.external_urls?.spotify || `https://open.spotify.com/playlist/${data.id}` };
+}
+
+export class PlaylistGoneError extends Error {}
+
+// /items is the post-March-2026 name for /tracks (see getPlaylistTracks);
+// retry the old path once in case writes haven't moved yet.
+async function writeItems(method, id, uris) {
+  let res = await apiWrite(method, `/playlists/${id}/items`, { uris });
+  if (res.status === 404) {
+    const legacy = await apiWrite(method, `/playlists/${id}/tracks`, { uris });
+    if (legacy.ok) { console.info('Spotify playlist write used legacy /tracks'); return; }
+    if (legacy.status === 404) throw new PlaylistGoneError('Playlist not found');
+    res = legacy;
+  }
+  if (!res.ok) throw new Error(`Spotify playlist write failed: ${res.status}`);
+}
+
+/** Replaces a playlist's contents with `uris` in order (PUT 100, then POST 100s). */
+export async function replacePlaylistItems(id, uris) {
+  await writeItems('PUT', id, uris.slice(0, 100));
+  for (let i = 100; i < uris.length; i += 100) await writeItems('POST', id, uris.slice(i, i + 100));
 }
 
 /** Search the Spotify catalog for tracks. Returns a small display-friendly list. */

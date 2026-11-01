@@ -183,6 +183,10 @@ export const Store = {
     writeJSON(KEYS.savedSets, sets);
     return set;
   },
+  updateSavedSet(id, patch) {
+    const sets = Store.getSavedSets().map((s) => (s.id === id ? { ...s, ...patch } : s));
+    writeJSON(KEYS.savedSets, sets);
+  },
   deleteSavedSet(id) {
     const sets = Store.getSavedSets().filter((s) => s.id !== id);
     writeJSON(KEYS.savedSets, sets);

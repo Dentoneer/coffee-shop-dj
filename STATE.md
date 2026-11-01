@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-11-01 (Shame Boys theme)_
+_Last updated: 2026-11-01 (Shame Boys theme; seed-vibe sets in design)_
 
 ## Current status
 
@@ -366,6 +366,19 @@ touched. Verified visually (Live Set + Crate Builder, headless
 screenshots) that text stays legible against the new white/pink cards.
 
 ## Open threads / next steps
+
+- [ ] **In design (2026-11-01): seed-vibe sets + Save to Spotify.** Spec at
+      `docs/superpowers/specs/2026-11-01-seed-vibe-sets-design.md`. DJ picks 3
+      Spotify songs, Last.fm (DJ chose it; free API key in Settings) builds a
+      set of matching vinyl + Spotify with song+album on every row (no more
+      "(DJ's choice)"); alternate V/S while fitting vinyl lasts, then
+      Spotify-only tail; "Save this set" also creates/updates a private
+      Spotify playlist of the full set (unmatched vinyl skipped + reported).
+      Language filter dropped by the DJ. Status: spec written, builder check
+      done and designer's calls added to the spec. Waiting on the DJ: how
+      strict vinyl-to-Spotify matching is for Save (same album recording vs
+      same song by same artist) -> DJ chose exact same version only. Waiting
+      on spec approval. Nothing built yet.
 
 - [x] Shame Boys reskin committed and pushed to `master` (6d623fc,
       2026-11-01); Pages redeploys automatically, hard-refresh to see it.

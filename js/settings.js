@@ -2,6 +2,7 @@ import { Store } from './store.js?v=20261101shame';
 import { login, logout, isLoggedIn, handleRedirect, getPlaylistRawSample } from './spotify.js?v=20261101shame';
 import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20261101shame';
 import { summaryLine } from './savedSets.js?v=20261101shame';
+import { checkLastfmKey } from './lastfm.js?v=20261101shame';
 
 // Tab containers are hidden (display:none), not removed, on tab-switch - so
 // unsubscribing the previous listener before subscribing a new one is
@@ -28,6 +29,20 @@ export function renderSettingsTab(container) {
       <p class="hint" id="s-playlist-status"></p>
       <div id="s-playlist-energy"></div>
       <p class="hint">Browse everything synced under the "Spotify Corner" tab.</p>
+    </div>
+
+    <div class="card">
+      <h3>Last.fm</h3>
+      <label>API key</label>
+      <input type="password" id="s-lastfm-key" value="${settings.lastfmApiKey || ''}" placeholder="32-character key" autocomplete="off" />
+      <div class="row" style="margin-top:0.5rem;">
+        <button type="button" id="s-lastfm-save" style="flex:none;">Save</button>
+        <button type="button" class="secondary" id="s-lastfm-test" style="flex:none;">Test key</button>
+      </div>
+      <p class="hint" id="s-lastfm-status"></p>
+      <p class="hint">Powers 🎯 Vibe sets and real song picks for your records. Free: create an API account at
+        <a href="https://www.last.fm/api/account/create" target="_blank" rel="noopener">last.fm/api/account/create</a>
+        (any app name; callback URL can be blank), then paste the "API key" here. Stored only in this browser.</p>
     </div>
 
     <div class="card">
@@ -63,6 +78,23 @@ export function renderSettingsTab(container) {
         edit or clear the Client ID field above yourself if you ever need to.</p>
     </div>
   `;
+
+  const lastfmKeyEl = container.querySelector('#s-lastfm-key');
+  const lastfmStatusEl = container.querySelector('#s-lastfm-status');
+  container.querySelector('#s-lastfm-save').addEventListener('click', () => {
+    Store.updateSettings({ lastfmApiKey: lastfmKeyEl.value.trim() });
+    lastfmStatusEl.textContent = lastfmKeyEl.value.trim() ? 'Saved.' : 'Cleared.';
+  });
+  container.querySelector('#s-lastfm-test').addEventListener('click', async () => {
+    Store.updateSettings({ lastfmApiKey: lastfmKeyEl.value.trim() });
+    lastfmStatusEl.textContent = 'Testing…';
+    try {
+      await checkLastfmKey();
+      lastfmStatusEl.textContent = '✓ Key works.';
+    } catch (e) {
+      lastfmStatusEl.textContent = `✗ ${e.message}`;
+    }
+  });
 
   container.querySelector('#s-redirect-uri').textContent = `${location.origin}${location.pathname}`;
 

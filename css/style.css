@@ -334,6 +334,9 @@ button:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; transfor
 
 .row { display: flex; gap: 0.6rem; align-items: center; }
 .row > * { flex: 1; }
+/* Live Set's five quick actions: wrap to two lines on narrow screens */
+.quick-actions { flex-wrap: wrap; }
+.quick-actions > button { flex: 1 1 7.5rem; }
 
 .vinyl-shelf {
   display: flex;

@@ -57,7 +57,7 @@ function writeCache(cache) {
 
 const asArray = (x) => [].concat(x || []);
 
-async function lastfmGet(method, params) {
+async function lastfmGet(method, params, { noCache = false } = {}) {
   const key = (Store.getSettings().lastfmApiKey || '').trim();
   if (!key) throw new LastfmError('Add your Last.fm API key in Settings first.');
 
@@ -66,7 +66,7 @@ async function lastfmGet(method, params) {
   const ttl = method.startsWith('track.') ? 7 * DAY : 30 * DAY;
   const cache = readCache();
   const hit = cache[cacheId];
-  if (hit && Date.now() - hit.at < ttl) return hit.data;
+  if (!noCache && hit && Date.now() - hit.at < ttl) return hit.data;
 
   const data = await throttled(async () => {
     let res;
@@ -85,6 +85,11 @@ async function lastfmGet(method, params) {
   fresh[cacheId] = { at: Date.now(), data };
   writeCache(fresh);
   return data;
+}
+
+/** Settings' "Test key": a real, uncached request, so a bad key can't pass on old cache. */
+export async function checkLastfmKey() {
+  await lastfmGet('artist.gettoptags', { artist: 'Radiohead' }, { noCache: true });
 }
 
 export async function getSimilarTracks(artist, title, limit = 50) {

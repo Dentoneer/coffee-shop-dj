@@ -9,6 +9,7 @@ import { renderMoodWave, PRESETS } from './moodWave.js?v=20261101shame';
 import { generateCrate } from './crateGenerator.js?v=20261101shame';
 import { pickSongForRecord } from './songPicker.js?v=20261101shame';
 import { renderSequenceTurn, renderSequenceList } from './sequenceView.js?v=20261101shame';
+import { renderVibePanel } from './vibePanel.js?v=20261101shame';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no
@@ -112,15 +113,17 @@ export function renderLiveTab(container) {
     </div>
 
     <div class="card" style="padding:0.5rem 0.8rem;">
-      <div class="row">
+      <div class="row quick-actions">
         <button type="button" class="secondary" id="toggle-save-set">&#128190; Save this set</button>
         <button type="button" class="secondary" id="toggle-open-set">&#128193; Open set</button>
+        <button type="button" class="secondary" id="toggle-vibe-set">&#127919; Vibe set</button>
         <button type="button" class="secondary" id="toggle-create-set">&#10024; Create set</button>
         <button type="button" class="secondary" id="reset-set-btn">&#128260; Reset set</button>
       </div>
       <div id="save-set-form" style="margin-top:0.5rem;"></div>
       <div id="open-set-form" style="margin-top:0.5rem;"></div>
       <div id="create-set-form" style="margin-top:0.5rem;"></div>
+      <div id="vibe-set-form" style="margin-top:0.5rem;"></div>
       <p class="hint" id="reset-set-status" style="margin-top:0.3rem;"></p>
     </div>
 
@@ -1042,6 +1045,21 @@ export function renderLiveTab(container) {
       });
     });
     openSetFormEl.querySelector('#os-cancel').addEventListener('click', closeOpenSetForm);
+  });
+
+  // Vibe set panel - toggled like the others; any other quick action closes it.
+  const vibeToggleBtn = container.querySelector('#toggle-vibe-set');
+  const vibeFormEl = container.querySelector('#vibe-set-form');
+  let vibeFormShown = false;
+  function closeVibeForm() { vibeFormShown = false; vibeFormEl.innerHTML = ''; }
+  [saveSetToggleBtn, openSetToggleBtn, createSetToggleBtn].forEach((b) => b.addEventListener('click', closeVibeForm));
+  vibeToggleBtn.addEventListener('click', () => {
+    closeSaveSetForm();
+    closeOpenSetForm();
+    closeCreateSetForm();
+    if (vibeFormShown) { closeVibeForm(); return; }
+    vibeFormShown = true;
+    renderVibePanel(vibeFormEl, { onBuilt: refreshTurn, onClose: closeVibeForm });
   });
 
   createSetToggleBtn.addEventListener('click', () => {

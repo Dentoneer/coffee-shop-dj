@@ -57,3 +57,10 @@ test('throttles to <=5 req/s', async () => {
   assert.equal(fetchCalls.length, 6);
   assert.ok(fetchCalls[5].at - fetchCalls[0].at >= 990, `spread was ${fetchCalls[5].at - fetchCalls[0].at}ms`);
 });
+
+test('checkLastfmKey bypasses the cache', async () => {
+  mockFetch(() => ({ json: { toptags: { tag: [{ name: 'rock', count: '1' }] } } }));
+  await lf.checkLastfmKey();
+  mockFetch(() => ({ status: 403, json: { error: 10, message: 'Invalid API key' } }));
+  await assert.rejects(lf.checkLastfmKey(), (err) => err.code === 10);
+});

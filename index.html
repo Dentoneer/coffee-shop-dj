@@ -3,29 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07040a" />
   <title>Coffee Shop DJ</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css?v=20261101shame" />
 </head>
 <body>
-  <header class="topbar">
-    <h1>&#9749; Coffee Shop DJ</h1>
-    <nav class="tabs">
-      <button class="tab-btn active" data-tab="live">Live Set</button>
-      <button class="tab-btn" data-tab="crate">Crate Builder</button>
-      <button class="tab-btn" data-tab="collection">Vinyl Corner</button>
-      <button class="tab-btn" data-tab="spotifyCorner">Spotify Corner</button>
-      <button class="tab-btn" data-tab="settings">Settings</button>
-    </nav>
-  </header>
+  <div id="neon" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <div class="frame f1" aria-hidden="true"></div><div class="frame f2" aria-hidden="true"></div><div class="frame f3" aria-hidden="true"></div>
 
-  <main id="app">
-    <section id="tab-live" class="tab-panel active"></section>
-    <section id="tab-crate" class="tab-panel"></section>
-    <section id="tab-collection" class="tab-panel"></section>
-    <section id="tab-spotifyCorner" class="tab-panel"></section>
-    <section id="tab-settings" class="tab-panel"></section>
-  </main>
+  <div class="scroller">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <svg class="emblem" viewBox="16 186 228 228" aria-hidden="true">
+          <circle cx="130" cy="300" r="110" stroke="#ec1c24"/>
+          <circle cx="130" cy="300" r="92"  stroke="#7cc98a"/>
+          <circle cx="130" cy="300" r="74"  stroke="#e6f53a"/>
+        </svg>
+        <h1>Coffee Shop DJ</h1>
+        <nav class="tabs">
+          <button class="tab-btn active" data-tab="live">Live Set</button>
+          <button class="tab-btn" data-tab="crate">Crate Builder</button>
+          <button class="tab-btn" data-tab="collection">Vinyl Corner</button>
+          <button class="tab-btn" data-tab="spotifyCorner">Spotify Corner</button>
+          <button class="tab-btn" data-tab="settings">Settings</button>
+        </nav>
+      </div>
+    </header>
 
-  <script type="module" src="js/app.js?v=20261007neon"></script>
+    <main id="app">
+      <section id="tab-live" class="tab-panel active"></section>
+      <section id="tab-crate" class="tab-panel"></section>
+      <section id="tab-collection" class="tab-panel"></section>
+      <section id="tab-spotifyCorner" class="tab-panel"></section>
+      <section id="tab-settings" class="tab-panel"></section>
+    </main>
+  </div>
+
+  <script type="module" src="js/app.js?v=20261101shame"></script>
 </body>
 </html>

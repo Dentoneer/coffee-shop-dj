@@ -48,8 +48,11 @@ Full design rationale: `docs/superpowers/specs/2026-09-16-coffee-shop-dj-design.
 - `js/crate.js`, `js/liveset.js` — per-tab UI rendering and handlers.
   `pickSpotifyCandidate()` in `liveset.js` is the single source for every
   live Spotify pick (auto-suggest, lookahead, Shuffle).
-- `css/style.css` — the whole theme (dark neon cyberpunk: hot pink/cyan/violet
-  glow on deep purple; UI labels use emoji). JS references CSS variables by
+- `css/style.css` — the whole theme ("Shame Boys", matching the band site
+  shameboys.netlify.app from the `band` repo: black base, drifting
+  pink/green/yellow/red neon glows, fixed 1968-style triple red/green/yellow
+  stripe frame with content scrolling inside `.scroller`, Bungee headings with
+  stacked offset shadows; UI labels use emoji). JS references CSS variables by
   name (`var(--accent)`, `--accent2`, `--border`), so retheme by changing
   their values, not renaming them.
 - `js/app.js` — tab routing, init, OAuth redirect handling, kicks off a

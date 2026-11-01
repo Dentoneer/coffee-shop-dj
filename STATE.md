@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-10-07 (reverted to neon cyberpunk theme)_
+_Last updated: 2026-11-01 (Shame Boys theme)_
 
 ## Current status
 
@@ -13,9 +13,8 @@ vinyl plan with drag/arrow/shuffle reordering, Spotify PKCE login + search +
 the DJ's own playlists synced in, Live Set's turn-based flow with per-row
 Change/Shuffle on every slot, a full personal vinyl collection (`data/collection.json`,
 189 records) browsable in Vinyl Corner, and a matching **Spotify Corner** tab
-browsing every track synced from the DJ's playlists. missyCoco-moodboard
-visual theme throughout (espresso/sage/blush on warm ivory, Playfair Display
-serif, monoline icons - see the reskin section below).
+browsing every track synced from the DJ's playlists. Shame Boys visual theme
+throughout (see the section below).
 
 Detailed history of what was built and fixed each round is in git log — this
 file only tracks current status and what's still open. `js/spotify.js` in
@@ -245,7 +244,34 @@ rounded corners on cards with a rainbow gradient top-border, a soft
 sparkle-dot background, `Baloo 2` + `Poppins` from Google Fonts. Superseded
 two days later by the Barbie reskin below, kept here for history.
 
-## Reverted to the original neon cyberpunk theme (current, 2026-10-07)
+## Shame Boys theme (current, 2026-11-01)
+
+User asked to give the app "the vibe of the Shame Boys website" - the band's
+listen-only site (https://shameboys.netlify.app, `band` repo,
+`static/share.html`). Lifted its look directly: palette pink `#f3a3ea` /
+red `#ec1c24` / green `#7cc98a` / yellow `#e6f53a` on near-black `#07040a`;
+four blurred neon glow blobs drifting behind everything (`#neon`, off under
+`prefers-reduced-motion`); the fixed 1968-style triple red/green/yellow
+stripe frame, with the header + tabs + main now wrapped in a `.scroller`
+inside it (so content never slides under the frame); the concentric-ring
+"O" emblem top-right; Bungee (Google Fonts) for the wordmark, card h2/h3,
+Vinyl Corner letters and the BPM readout, with the band site's stacked
+red/green/yellow offset text-shadow. Pink pill primary buttons with black
+border + hard red offset shadow (green on hover), dark outline secondary
+buttons that go yellow on hover, black-bordered translucent blurred cards,
+striped underline on h2, striped left edge on the bridge-target box, vinyl
+disc = the emblem's rings around a pink label, Spotify = green. The band
+logo/name were not used - this app keeps its own "Coffee Shop DJ" wordmark.
+Variable names unchanged (`--accent` = pink, `--accent2` = yellow,
+`--vinyl` = pink, `--spotify` = green). Only `css/style.css` and
+`index.html` changed (plus cache tag `20261101shame`, also now on the
+stylesheet link). Verified with headless Chrome screenshots of Live Set at
+1200px and at a true 400px (via a 400px iframe); at <=520px buttons use
+rounded rectangles instead of pills since squeezed row buttons wrap to
+several lines. Not visually checked: the other four tabs and live Spotify
+rows with album art.
+
+## Reverted to the original neon cyberpunk theme (superseded above, 2026-10-07)
 
 User asked to go back to "the neon colors we had before all of these
 changes". Restored `css/`, `index.html` and `js/` exactly as of 3bf0463

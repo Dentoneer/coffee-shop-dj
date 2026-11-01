@@ -1,7 +1,7 @@
-import { Store } from './store.js?v=20261007neon';
-import { login, logout, isLoggedIn, handleRedirect, getPlaylistRawSample } from './spotify.js?v=20261007neon';
-import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20261007neon';
-import { summaryLine } from './savedSets.js?v=20261007neon';
+import { Store } from './store.js?v=20261101shame';
+import { login, logout, isLoggedIn, handleRedirect, getPlaylistRawSample } from './spotify.js?v=20261101shame';
+import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20261101shame';
+import { summaryLine } from './savedSets.js?v=20261101shame';
 
 // Tab containers are hidden (display:none), not removed, on tab-switch - so
 // unsubscribing the previous listener before subscribing a new one is

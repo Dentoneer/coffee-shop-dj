@@ -1,12 +1,12 @@
-import { Store, newId } from './store.js?v=20261007neon';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20261007neon';
-import { renderTrackForm } from './trackForm.js?v=20261007neon';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20261007neon';
-import { createTapTempo } from './tapTempo.js?v=20261007neon';
-import { syncPlaylists } from './spotifySync.js?v=20261007neon';
-import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=20261007neon';
-import { renderMoodWave, PRESETS } from './moodWave.js?v=20261007neon';
-import { generateCrate } from './crateGenerator.js?v=20261007neon';
+import { Store, newId } from './store.js?v=20261101shame';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection } from './plan.js?v=20261101shame';
+import { renderTrackForm } from './trackForm.js?v=20261101shame';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20261101shame';
+import { createTapTempo } from './tapTempo.js?v=20261101shame';
+import { syncPlaylists } from './spotifySync.js?v=20261101shame';
+import { saveCurrentSet, loadSavedSet, summaryLine } from './savedSets.js?v=20261101shame';
+import { renderMoodWave, PRESETS } from './moodWave.js?v=20261101shame';
+import { generateCrate } from './crateGenerator.js?v=20261101shame';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no

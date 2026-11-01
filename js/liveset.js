@@ -11,6 +11,7 @@ import { generateCrate } from './crateGenerator.js?v=20261101shame';
 import { pickSongForRecord } from './songPicker.js?v=20261101shame';
 import { renderSequenceTurn, renderSequenceList } from './sequenceView.js?v=20261101shame';
 import { renderVibePanel } from './vibePanel.js?v=20261101shame';
+import { discoverSimilar } from './vibeSet.js?v=20261101shame';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no
@@ -24,7 +25,10 @@ const NEW_MUSIC_FRACTION = 0.1;
 // tracks come from spotifySync's shared cache (synced once, reused
 // everywhere - Live Set, Spotify Corner - instead of each screen
 // fetching its own copy).
-async function pickSpotifyCandidate(autoQuery, excludeUris = [], energyTarget = null) {
+// neighbors: the vinyls either side of the gap ({artist, title}) - the ~10%
+// discovery path asks Last.fm for songs listeners pair with them, falling
+// back to the text search when there's no key / no answer.
+async function pickSpotifyCandidate(autoQuery, excludeUris = [], energyTarget = null, neighbors = []) {
   const { tracks: pool } = await syncPlaylists();
   const excluded = new Set(excludeUris.filter(Boolean));
   let available = pool.filter((t) => !excluded.has(t.uri));
@@ -46,6 +50,8 @@ async function pickSpotifyCandidate(autoQuery, excludeUris = [], energyTarget = 
     const pick = available[Math.floor(Math.random() * available.length)];
     return { ...pick, fromPlaylist: true };
   }
+  const similar = await discoverSimilar(neighbors, [...excluded]).catch(() => null);
+  if (similar) return similar;
   const results = await searchTracks(autoQuery, 5);
   const fresh = results.find((r) => !excluded.has(r.uri)) || results[0] || null;
   return fresh ? { ...fresh, fromPlaylist: false } : null;
@@ -461,7 +467,7 @@ export function renderLiveTab(container) {
           <div class="track-meta">
             <div class="title">${r.title}</div>
             <div class="sub">${r.artist} &middot; ${r.album || ''}${r.trackNumber != null ? ` #${r.trackNumber}` : ''}
-              ${r.fromPlaylist ? ' &middot; <span style="color:var(--accent2)">from your playlist</span>' : ' &middot; new'}
+              ${r.fromPlaylist ? ' &middot; <span style="color:var(--accent2)">from your playlist</span>' : (r.fromLastfm ? ' &middot; from Last.fm' : ' &middot; new')}
             </div>
           </div>
         </div>
@@ -475,7 +481,7 @@ export function renderLiveTab(container) {
     turnCard.querySelector('#spotify-shuffle-btn').addEventListener('click', async () => {
       const rowEl = turnCard.querySelector('#spotify-suggestion-row');
       rowEl.innerHTML = '<p class="hint">Shuffling…</p>';
-      const pick = await pickSpotifyCandidate(autoQuery, playedSpotifyUris(), bt.energyTarget);
+      const pick = await pickSpotifyCandidate(autoQuery, playedSpotifyUris(), bt.energyTarget, [snap.lastPlayed, snap.nextVinyl]);
       if (afterVinylId && pick) Store.setPlannedSpotifyFor(afterVinylId, pick);
       renderSuggestion(pick);
     });
@@ -545,7 +551,7 @@ export function renderLiveTab(container) {
     if (planned) {
       renderSuggestion(planned);
     } else if (afterVinylId) {
-      pickSpotifyCandidate(autoQuery, playedSpotifyUris(), bt.energyTarget).then((pick) => {
+      pickSpotifyCandidate(autoQuery, playedSpotifyUris(), bt.energyTarget, [snap.lastPlayed, snap.nextVinyl]).then((pick) => {
         if (pick) Store.setPlannedSpotifyFor(afterVinylId, pick);
         renderSuggestion(pick);
       }).catch(() => renderSuggestion(null));
@@ -775,7 +781,7 @@ export function renderLiveTab(container) {
       function fillRow(pick, { loading = false, errorMsg = null } = {}) {
         const placeholder = loading ? 'TBD — finding a match…' : 'TBD — no auto-match, tap Change to search';
         const sourceTag = pick
-          ? (pick.fromPlaylist ? ' &middot; <span style="color:var(--accent2)">from your playlist</span>' : ' &middot; new')
+          ? (pick.fromPlaylist ? ' &middot; <span style="color:var(--accent2)">from your playlist</span>' : (pick.fromLastfm ? ' &middot; from Last.fm' : ' &middot; new'))
           : '';
         row.innerHTML = `
           <span class="badge spotify">SPOTIFY</span>
@@ -820,7 +826,7 @@ export function renderLiveTab(container) {
           if (!entry.afterVinylId) return;
           shuffleBtn.disabled = true;
           const bt2 = getBridgeTarget(entry.leftVinyl, entry.rightVinyl, Store.getSettings());
-          const newPick = await pickSpotifyCandidate(buildAutoQuery(bt2), playedSpotifyUris(), bt2.energyTarget);
+          const newPick = await pickSpotifyCandidate(buildAutoQuery(bt2), playedSpotifyUris(), bt2.energyTarget, [entry.leftVinyl, entry.rightVinyl]);
           if (newPick) Store.setPlannedSpotifyFor(entry.afterVinylId, newPick);
           fillRow(newPick);
         });
@@ -899,7 +905,7 @@ export function renderLiveTab(container) {
             const bt2 = getBridgeTarget(entry.leftVinyl, entry.rightVinyl, Store.getSettings());
             const query = buildAutoQuery(bt2);
             try {
-              const pick = await pickSpotifyCandidate(query, playedSpotifyUris(), bt2.energyTarget);
+              const pick = await pickSpotifyCandidate(query, playedSpotifyUris(), bt2.energyTarget, [entry.leftVinyl, entry.rightVinyl]);
               if (pick) {
                 Store.setPlannedSpotifyFor(entry.afterVinylId, pick);
                 fillRow(pick);

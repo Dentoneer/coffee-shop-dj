@@ -94,3 +94,21 @@ test('generateVibeSet writes a sequence-mode set with seeds included', async () 
   assert.equal(first.title, 'Fit Song');
   assert.ok(JSON.parse(localStorage.getItem('csdj.vibePool')).spotify.length > 0);
 });
+
+test('discoverSimilar returns a resolved similar track that is not excluded', async () => {
+  routeByHost({
+    lastfm: () => ({ json: { similartracks: { track: [{ name: 'Played', artist: { name: 'P' }, match: '1' }, { name: 'Fresh', artist: { name: 'F' }, match: '0.9' }] } } }),
+    spotify: spotifyEcho,
+  });
+  const r = await v.discoverSimilar([{ artist: 'A', title: 'Seed' }], ['spotify:track:Played']);
+  assert.equal(r.uri, 'spotify:track:Fresh');
+  assert.equal(r.fromLastfm, true);
+  assert.equal(r.fromPlaylist, false);
+});
+
+test("discoverSimilar returns null with no key, no neighbors, or only (DJ's choice) neighbors", async () => {
+  assert.equal(await v.discoverSimilar([], []), null);
+  assert.equal(await v.discoverSimilar([{ artist: 'A', title: "(DJ's choice)" }], []), null);
+  setSettings({ lastfmApiKey: '' });
+  assert.equal(await v.discoverSimilar([{ artist: 'A', title: 'Seed' }], []), null);
+});

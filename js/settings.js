@@ -1,8 +1,8 @@
-import { Store } from './store.js?v=20261101shame';
-import { login, logout, isLoggedIn, hasScope, handleRedirect, getPlaylistRawSample } from './spotify.js?v=20261101shame';
-import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20261101shame';
-import { summaryLine } from './savedSets.js?v=20261101shame';
-import { checkLastfmKey } from './lastfm.js?v=20261101shame';
+import { Store } from './store.js?v=20261101vibe';
+import { login, logout, isLoggedIn, hasScope, handleRedirect, getPlaylistRawSample } from './spotify.js?v=20261101vibe';
+import { syncPlaylists, getSyncStatus, onSyncChange } from './spotifySync.js?v=20261101vibe';
+import { summaryLine } from './savedSets.js?v=20261101vibe';
+import { checkLastfmKey } from './lastfm.js?v=20261101vibe';
 
 // Tab containers are hidden (display:none), not removed, on tab-switch - so
 // unsubscribing the previous listener before subscribing a new one is

@@ -1,8 +1,8 @@
-import { Store } from './store.js?v=20261101shame';
-import { placeNewVinyl, leaveSequenceMode } from './plan.js?v=20261101shame';
-import { renderTrackForm } from './trackForm.js?v=20261101shame';
-import { renderMoodWave, PRESETS } from './moodWave.js?v=20261101shame';
-import { generateCrate } from './crateGenerator.js?v=20261101shame';
+import { Store } from './store.js?v=20261101vibe';
+import { placeNewVinyl, leaveSequenceMode } from './plan.js?v=20261101vibe';
+import { renderTrackForm } from './trackForm.js?v=20261101vibe';
+import { renderMoodWave, PRESETS } from './moodWave.js?v=20261101vibe';
+import { generateCrate } from './crateGenerator.js?v=20261101vibe';
 
 export function renderCrateTab(container) {
   let curvePoints = PRESETS['Build up'].slice();

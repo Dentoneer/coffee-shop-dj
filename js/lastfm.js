@@ -5,7 +5,7 @@
 // guideline and cached in localStorage (artist/album data rarely changes, so
 // the ~189-record collection is only fetched once).
 
-import { Store } from './store.js?v=20261101shame';
+import { Store } from './store.js?v=20261101vibe';
 
 const API = 'https://ws.audioscrobbler.com/2.0/';
 const CACHE_KEY = 'csdj.lastfmCache';

@@ -5,12 +5,12 @@
 // only. Nothing is written to the live set (or to Spotify) until every
 // lookup has succeeded, so a failure never leaves a half-built set.
 
-import { Store, newId } from './store.js?v=20261101shame';
-import { hasLastfmKey, getSimilarTracks, LastfmError } from './lastfm.js?v=20261101shame';
-import { findSpotifyTrack, normalizeText, normalizeTitle } from './matching.js?v=20261101shame';
-import { buildSeedProfile, scoreRecords, FIT_THRESHOLD } from './vibeScore.js?v=20261101shame';
-import { pickSongForRecord } from './songPicker.js?v=20261101shame';
-import { loadCollection } from './crateGenerator.js?v=20261101shame';
+import { Store, newId } from './store.js?v=20261101vibe';
+import { hasLastfmKey, getSimilarTracks, LastfmError } from './lastfm.js?v=20261101vibe';
+import { findSpotifyTrack, normalizeText, normalizeTitle } from './matching.js?v=20261101vibe';
+import { buildSeedProfile, scoreRecords, FIT_THRESHOLD } from './vibeScore.js?v=20261101vibe';
+import { pickSongForRecord } from './songPicker.js?v=20261101vibe';
+import { loadCollection } from './crateGenerator.js?v=20261101vibe';
 
 const songKey = (artist, title) => `${normalizeText(artist)}|${normalizeTitle(title, { loose: true })}`;
 

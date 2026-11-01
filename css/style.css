@@ -267,7 +267,7 @@ button:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; transfor
 
 .track-row img { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; border: 2px solid var(--line); }
 
-.track-meta { flex: 1; }
+.track-meta { flex: 1; min-width: 0; overflow-wrap: break-word; }
 .track-meta .title { font-weight: bold; }
 .track-meta .sub { color: var(--ink-soft); font-size: 0.85rem; }
 
@@ -417,6 +417,9 @@ button:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; transfor
   .topbar h1 { -webkit-text-stroke: 1px var(--line); text-shadow: 2px 2px 0 var(--red), 4px 4px 0 var(--green), 6px 6px 0 var(--yellow); }
   main { padding: 1.1rem 0.75rem; }
   .card { padding: 0.9rem 0.8rem; }
+  /* Vibe-set Full Set rows: song info on its own line, controls below */
+  .seq-row { flex-wrap: wrap; }
+  .seq-row .track-meta { flex: 1 1 100%; order: -1; }
   /* Squeezed row buttons wrap to 2-3 lines; a full pill turns into a tall oval */
   button:not(.tab-btn) { border-radius: 14px; padding: 0.45rem 0.6rem; }
 }

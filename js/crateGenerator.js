@@ -2,9 +2,9 @@
 // crate" card and Live Set's "Create set" panel, so there's exactly one
 // implementation instead of two that could drift apart.
 
-import { Store, newId } from './store.js?v=20261101shame';
-import { sampleEnergyAtFraction, energyToBpm } from './moodWave.js?v=20261101shame';
-import { pickSongForRecord } from './songPicker.js?v=20261101shame';
+import { Store, newId } from './store.js?v=20261101vibe';
+import { sampleEnergyAtFraction, energyToBpm } from './moodWave.js?v=20261101vibe';
+import { pickSongForRecord } from './songPicker.js?v=20261101vibe';
 
 let cachedCollection = null;
 export async function loadCollection() {

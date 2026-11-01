@@ -5,10 +5,10 @@
 // else is skipped and counted, never swapped for another version. Re-saving
 // the same live set rewrites its playlist instead of creating another.
 
-import { Store } from './store.js?v=20261101shame';
-import { isLoggedIn, hasScope, createPlaylist, replacePlaylistItems, PlaylistGoneError } from './spotify.js?v=20261101shame';
-import { findExactVinylOnSpotify } from './matching.js?v=20261101shame';
-import { saveCurrentSet } from './savedSets.js?v=20261101shame';
+import { Store } from './store.js?v=20261101vibe';
+import { isLoggedIn, hasScope, createPlaylist, replacePlaylistItems, PlaylistGoneError } from './spotify.js?v=20261101vibe';
+import { findExactVinylOnSpotify } from './matching.js?v=20261101vibe';
+import { saveCurrentSet } from './savedSets.js?v=20261101vibe';
 
 /** Pure: the set's songs in play order, as Spotify URIs or vinyl to resolve. */
 export function collectSetEntries({ mode, tracks, planOrder, plannedSpotify }) {

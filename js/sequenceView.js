@@ -5,11 +5,11 @@
 // not a fresh text search. Mood-wave ("alternate") sets keep liveset.js's
 // original gap-based rendering untouched.
 
-import { Store } from './store.js?v=20261101shame';
-import { markPlayed } from './plan.js?v=20261101shame';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20261101shame';
-import { normalizeText } from './matching.js?v=20261101shame';
-import { pickSongForRecord } from './songPicker.js?v=20261101shame';
+import { Store } from './store.js?v=20261101vibe';
+import { markPlayed } from './plan.js?v=20261101vibe';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20261101vibe';
+import { normalizeText } from './matching.js?v=20261101vibe';
+import { pickSongForRecord } from './songPicker.js?v=20261101vibe';
 
 export const vinylKey = (r) => `${normalizeText(r.artist).replace(/^the /, '')}|${normalizeText(r.album)}`;
 
@@ -191,7 +191,7 @@ export function renderSequenceList(listEl, snap, ctx) {
   upcoming.forEach((t, i) => {
     const wrap = document.createElement('div');
     const row = document.createElement('div');
-    row.className = 'track-row';
+    row.className = 'track-row seq-row';
     if (i === 0) row.style.background = 'var(--accent-soft)';
     row.innerHTML = `
       <span class="badge ${t.source}">${t.source.toUpperCase()}</span>

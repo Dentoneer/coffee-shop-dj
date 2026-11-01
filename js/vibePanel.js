@@ -2,10 +2,10 @@
 // length, Generate. The set itself is built by vibeSet.generateVibeSet; this
 // is only the UI around it.
 
-import { Store } from './store.js?v=20261101shame';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20261101shame';
-import { hasLastfmKey } from './lastfm.js?v=20261101shame';
-import { generateVibeSet } from './vibeSet.js?v=20261101shame';
+import { Store } from './store.js?v=20261101vibe';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20261101vibe';
+import { hasLastfmKey } from './lastfm.js?v=20261101vibe';
+import { generateVibeSet } from './vibeSet.js?v=20261101vibe';
 
 const SEED_COUNT = 3;
 

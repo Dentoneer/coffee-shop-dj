@@ -17,6 +17,33 @@ Full design rationale: `docs/superpowers/specs/2026-09-16-coffee-shop-dj-design.
 - Plain HTML/CSS/JS, no build step, no framework.
 - `index.html` — shell with five tabs: Live Set, Crate Builder, Vinyl
   Corner, Spotify Corner, Settings.
+- **Two set modes** (`settings.planMode`, see `getPlanMode` in `js/plan.js`):
+  `'alternate'` = mood-wave sets: `planOrder` is vinyl only, Spotify slots
+  are implicit gaps (`plannedSpotify[afterVinylId]`), strict V/S
+  alternation. `'sequence'` = 🎯 Vibe sets: `planOrder` holds every song,
+  vinyl and real `source:'spotify'` tracks, in play order (V/S while fitting
+  vinyl lasts, then Spotify only). Rendered by `js/sequenceView.js`; the
+  mood lever is hidden. Spec/plan:
+  `docs/superpowers/specs/2026-11-01-seed-vibe-sets-design.md`,
+  `docs/superpowers/plans/2026-11-01-seed-vibe-sets.md`.
+- **Last.fm is the vibe source** (Spotify's recommendations/audio-features
+  are closed to new apps): `js/lastfm.js` (throttled 5 req/s, cached in
+  `localStorage` `csdj.lastfmCache`; DJ's free API key in Settings →
+  Last.fm). `js/vibeScore.js` scores collection records against 3 seed
+  songs (0.7 × artist similarity + 0.3 × tag cosine, fit ≥ 0.35).
+  `js/vibeSet.js` builds the set (+ `discoverSimilar` for the ~10%
+  discovery path in mood-wave Spotify turns). `js/vibePanel.js` is the UI.
+- `js/songPicker.js` names a real song for every vinyl (no more
+  "(DJ's choice)" unless Last.fm and Spotify both fail).
+  `js/matching.js` holds the match rules: loose (any version) for
+  candidates, **exact same album** for vinyl → Spotify (DJ's rule).
+- `js/spotifySave.js` — "Save this set" saves in-app, then writes a
+  private Spotify playlist of the whole set in order (vinyl only on an exact
+  match, others skipped + counted). Re-saving the same live set rewrites its
+  playlist (`csdj.liveSpotifyPlaylist`). Needs scope
+  `playlist-modify-private` — older logins must log out/in once.
+- **Tests:** `node --test "tests/*.test.js"` (Node 24, no deps;
+  `tests/helpers/env.js` fakes `localStorage` + routes `fetch` by host).
 - `data/collection.json` — the full personal vinyl collection (~188
   records, artist/album only, no tempo/energy tagging), dictated by the
   user and captured as a one-time catalog build. This is the master

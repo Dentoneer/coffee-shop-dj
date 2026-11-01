@@ -378,6 +378,9 @@ screenshots) that text stays legible against the new white/pink cards.
       /playlists/{id}/items`, `/tracks` fallback) are untested live; if
       Save fails, capture the raw response and fix the shape. Tune
       `FIT_THRESHOLD` (0.35) after a real run if too few/many records fit.
+      Branch `seed-vibe-sets` (not yet merged to `master`/live): final
+      whole-branch code review running; fix Critical/Important findings,
+      then merge + push, then the live check with the DJ.
 
 - [x] Shame Boys reskin committed and pushed to `master` (6d623fc,
       2026-11-01); Pages redeploys automatically, hard-refresh to see it.

@@ -198,6 +198,20 @@ export function leaveSequenceMode(confirmFn) {
   return true;
 }
 
+/**
+ * Patch for a hand-edited vinyl song. A changed song/album/artist drops the
+ * stored Spotify link + art - they belonged to the old recording, and Save
+ * to Spotify must re-resolve (or skip) rather than add the wrong version.
+ */
+export function songEditPatch(track, { artist, album, title, trackNumber }) {
+  const patch = { artist, album, title, trackNumber };
+  if (artist !== track.artist || album !== track.album || title !== track.title) {
+    patch.spotifyUri = null;
+    patch.spotifyArt = null;
+  }
+  return patch;
+}
+
 /** Recomputes and persists everything the Live Set view needs to render. */
 export function computeLiveSnapshot() {
   const tracks = Store.getTracks();

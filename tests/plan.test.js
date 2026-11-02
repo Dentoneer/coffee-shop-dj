@@ -81,3 +81,13 @@ test('leaveSequenceMode: cancel keeps the vibe set, confirm resets to alternate'
   assert.equal(plan.leaveSequenceMode(() => { asked = true; return false; }), true);
   assert.equal(asked, false, 'alternate mode never asks');
 });
+
+test('songEditPatch clears the Spotify link when the song changes, keeps it otherwise', () => {
+  const track = { artist: 'A', album: 'Alb', title: 'Track 1', trackNumber: 1, spotifyUri: 'spotify:track:t1', spotifyArt: 'art' };
+  const changed = plan.songEditPatch(track, { artist: 'A', album: 'Alb', title: 'Track 5', trackNumber: 5 });
+  assert.equal(changed.spotifyUri, null);
+  assert.equal(changed.spotifyArt, null);
+  assert.equal(changed.title, 'Track 5');
+  const same = plan.songEditPatch(track, { artist: 'A', album: 'Alb', title: 'Track 1', trackNumber: 1 });
+  assert.equal('spotifyUri' in same, false);
+});

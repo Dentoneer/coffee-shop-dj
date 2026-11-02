@@ -99,7 +99,9 @@ export function renderVibePanel(mountEl, { onBuilt, onClose }) {
         + (r.short ? ' (fewer than asked, not enough matches).' : '.');
       onBuilt();
     } catch (e) {
-      statusEl.textContent = `Couldn't build the set: ${e.message}`;
+      statusEl.textContent = e.code === 10 || e.code === 26
+        ? 'Last.fm rejected your API key — check it in Settings → Last.fm (Test key).'
+        : `Couldn't build the set: ${e.message}`;
     } finally {
       generateBtn.disabled = seeds.some((s) => !s);
     }

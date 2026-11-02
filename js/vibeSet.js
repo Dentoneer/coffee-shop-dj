@@ -12,6 +12,10 @@ import { buildSeedProfile, scoreRecords, FIT_THRESHOLD } from './vibeScore.js?v=
 import { pickSongForRecord } from './songPicker.js?v=20261101vibe';
 import { loadCollection } from './crateGenerator.js?v=20261101vibe';
 
+// Spotify joins collaborators ("Daft Punk, Pharrell Williams"); Last.fm
+// only knows the lead artist.
+export const primaryArtist = (artist) => String(artist || '').split(', ')[0];
+
 const songKey = (artist, title) => `${normalizeText(artist)}|${normalizeTitle(title, { loose: true })}`;
 
 /** Merges Last.fm similar tracks from several seeds, best-shared first. */
@@ -19,7 +23,12 @@ async function rankSimilar(seeds, limit) {
   const merged = new Map();
   let anyData = false;
   for (const s of seeds) {
-    const sims = await getSimilarTracks(s.artist, s.title, limit).catch(() => []);
+    // "not found" (6) just means Last.fm doesn't know this seed - skip it.
+    // Anything else (bad key, unreachable) is the DJ's to fix, so surface it.
+    const sims = await getSimilarTracks(primaryArtist(s.artist), s.title, limit).catch((err) => {
+      if (err instanceof LastfmError && err.code !== 6) throw err;
+      return [];
+    });
     if (sims.length) anyData = true;
     sims.forEach((t) => {
       const k = songKey(t.artist, t.title);
@@ -132,7 +141,7 @@ export async function generateVibeSet(seeds, count, onProgress = () => {}) {
 
   onProgress('Matching your collection…');
   const collection = await loadCollection();
-  const profile = await buildSeedProfile(seeds.map((s) => s.artist));
+  const profile = await buildSeedProfile(seeds.map((s) => primaryArtist(s.artist)));
   const scored = await scoreRecords(collection, profile, (done, total) => {
     onProgress('Learning your collection…', done, total);
   });

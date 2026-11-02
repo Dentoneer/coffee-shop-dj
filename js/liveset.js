@@ -1,5 +1,5 @@
 import { Store, newId } from './store.js?v=20261101vibe';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection, placeNewVinyl, leaveSequenceMode } from './plan.js?v=20261101vibe';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection, placeNewVinyl, leaveSequenceMode, songEditPatch } from './plan.js?v=20261101vibe';
 import { renderTrackForm } from './trackForm.js?v=20261101vibe';
 import { searchTracks, isLoggedIn } from './spotify.js?v=20261101vibe';
 import { createTapTempo } from './tapTempo.js?v=20261101vibe';
@@ -347,10 +347,7 @@ export function renderLiveTab(container) {
       }
       const newBpm = editedBpm ?? track.bpm;
       const updated = Store.updateTrack(track.id, {
-        artist,
-        album,
-        title,
-        trackNumber: tn ? Number(tn) : null,
+        ...songEditPatch(track, { artist, album, title, trackNumber: tn ? Number(tn) : null }),
         bpm: newBpm,
         bpmEstimated: bpmConfirmed ? false : track.bpmEstimated,
       });

@@ -112,3 +112,19 @@ test("discoverSimilar returns null with no key, no neighbors, or only (DJ's choi
   setSettings({ lastfmApiKey: '' });
   assert.equal(await v.discoverSimilar([{ artist: 'A', title: 'Seed' }], []), null);
 });
+
+test('an invalid Last.fm key surfaces as a key error, not "no similar songs"', async () => {
+  routeByHost({ lastfm: () => ({ status: 403, json: { error: 10, message: 'Invalid API key - You must be granted a valid key by last.fm' } }), spotify: spotifyEcho });
+  await assert.rejects(v.buildSpotifyPool([seed('A', 'One')], []), (err) => err.code === 10);
+});
+
+test('collaboration seeds query Last.fm with the first artist', async () => {
+  routeByHost({
+    lastfm: (url) => (url.searchParams.get('artist') === 'Daft Punk'
+      ? { json: { similartracks: { track: [{ name: 'Hit', artist: { name: 'Z' }, match: '1' }] } } }
+      : { json: { error: 6, message: 'Track not found' } }),
+    spotify: spotifyEcho,
+  });
+  const pool = await v.buildSpotifyPool([seed('Daft Punk, Pharrell Williams', 'Get Lucky')], []);
+  assert.deepEqual(pool.map((p) => p.title), ['Hit']);
+});

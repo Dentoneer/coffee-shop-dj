@@ -69,13 +69,14 @@ test('generateVibeSet without Last.fm key rejects and leaves the live set unchan
   assert.deepEqual(JSON.parse(localStorage.getItem('csdj.planOrder')), ['keep']);
 });
 
-test('generateVibeSet writes a sequence-mode set with seeds included', async () => {
+test('generateVibeSet writes a sequence-mode set without the seed songs themselves', async () => {
   routeByHost({
     local: () => ({ json: [{ artist: 'Seed Artist A', album: 'Fits' }, { artist: 'Nope', album: 'Off' }] }),
     lastfm: (url) => {
       const m = url.searchParams.get('method');
-      if (m === 'track.getsimilar') return { json: { similartracks: { track: Array.from({ length: 12 }, (_, i) => ({ name: `Sim ${url.searchParams.get('track')}${i}`, artist: { name: 'Q' }, match: '0.5' })) } } };
+      if (m === 'track.getsimilar') return { json: { similartracks: { track: Array.from({ length: 12 }, (_, i) => ({ name: `Sim ${url.searchParams.get('track')}${i}`, artist: { name: `Q ${url.searchParams.get('track')}${i}` }, match: '0.5' })) } } };
       if (m === 'album.getinfo') return { json: { album: { tracks: { track: [{ name: 'Fit Song' }] } } } };
+      if (m === 'artist.gettoptags') return { json: { toptags: { tag: url.searchParams.get('artist') === 'Nope' ? [] : [{ name: 'son', count: '100' }] } } };
       return { json: {} };
     },
     spotify: spotifyEcho,
@@ -88,7 +89,7 @@ test('generateVibeSet writes a sequence-mode set with seeds included', async () 
   assert.equal(order.length, 10);
   assert.equal(r.vinylCount, 1);
   const uris = tracks.map((t) => t.spotifyUri);
-  seeds.forEach((s) => assert.ok(uris.includes(s.uri), `seed ${s.title} missing`));
+  seeds.forEach((s) => assert.ok(!uris.includes(s.uri), `seed ${s.title} should not be in the set`));
   const first = tracks.find((t) => t.id === order[0]);
   assert.equal(first.source, 'vinyl');
   assert.equal(first.title, 'Fit Song');
@@ -134,8 +135,9 @@ function mixRoutes() {
     local: () => ({ json: [{ artist: 'Seed Artist A', album: 'Fits' }, { artist: 'Nope', album: 'Off' }] }),
     lastfm: (url) => {
       const m = url.searchParams.get('method');
-      if (m === 'track.getsimilar') return { json: { similartracks: { track: Array.from({ length: 12 }, (_, i) => ({ name: `Sim ${url.searchParams.get('track')}${i}`, artist: { name: 'Q' }, match: '0.5' })) } } };
+      if (m === 'track.getsimilar') return { json: { similartracks: { track: Array.from({ length: 12 }, (_, i) => ({ name: `Sim ${url.searchParams.get('track')}${i}`, artist: { name: `Q ${url.searchParams.get('track')}${i}` }, match: '0.5' })) } } };
       if (m === 'album.getinfo') return { json: { album: { tracks: { track: [{ name: `${url.searchParams.get('album')} Song` }] } } } };
+      if (m === 'artist.gettoptags') return { json: { toptags: { tag: url.searchParams.get('artist') === 'Nope' ? [] : [{ name: 'son', count: '100' }] } } };
       return { json: {} };
     },
     spotify: spotifyEcho,
@@ -161,11 +163,71 @@ test('mix "spotify" builds only Spotify and never loads the collection', async (
   const r = await v.generateVibeSet(mixSeeds(), 6, () => {}, 'spotify');
   assert.deepEqual(liveSources(), Array(6).fill('spotify'));
   assert.equal(r.vinylCount, 0);
-  assert.equal(fetchCalls.some((c) => c.url.searchParams.get('method') === 'artist.gettoptags'), false, 'collection was scored');
+  assert.equal(fetchCalls.some((c) => c.url.searchParams.get('artist') === 'Nope'), false, 'collection was scored');
 });
 
 test('mix defaults to "mixed"', async () => {
   mixRoutes();
   await v.generateVibeSet(mixSeeds(), 4, () => {});
   assert.deepEqual(liveSources(), ['vinyl', 'spotify', 'spotify', 'spotify']);
+});
+
+test("seedGenres sums the seeds' tags, drops junk and seed-artist-name tags", async () => {
+  routeByHost({ lastfm: (url) => {
+    if (url.searchParams.get('method') === 'track.gettoptags') return { json: { toptags: { tag: [
+      { name: 'Son Cubano', count: '100' }, { name: 'seen live', count: '90' }, { name: 'Buena Vista Social Club', count: '80' }, { name: 'latin', count: '50' },
+    ] } } };
+    return { json: {} };
+  } });
+  const g = await v.seedGenres([seed('Buena Vista Social Club', 'Chan Chan'), seed('Compay Segundo', 'X')]);
+  assert.deepEqual(g, ['son cubano', 'latin']);
+});
+
+test("buildSpotifyPool adds top songs from the seeds' genres", async () => {
+  routeByHost({
+    lastfm: (url) => {
+      const m = url.searchParams.get('method');
+      if (m === 'track.gettoptags') return { json: { toptags: { tag: [{ name: 'bolero', count: '100' }] } } };
+      if (m === 'tag.gettoptracks') return { json: { tracks: { track: [{ name: 'Genre Hit', artist: { name: 'G' } }] } } };
+      return { json: { error: 6, message: 'Track not found' } };
+    },
+    spotify: spotifyEcho,
+  });
+  const pool = await v.buildSpotifyPool([seed('A', 'One')], []);
+  assert.deepEqual(pool.map((p) => p.title), ['Genre Hit']);
+});
+
+test('buildSpotifyPool keeps one song per artist', async () => {
+  routeByHost({
+    lastfm: (url) => (url.searchParams.get('method') === 'track.getsimilar'
+      ? { json: { similartracks: { track: [
+        { name: 'A1', artist: { name: 'Same' }, match: '1' }, { name: 'A2', artist: { name: 'Same' }, match: '0.9' }, { name: 'B1', artist: { name: 'Other' }, match: '0.8' },
+      ] } } }
+      : { json: {} }),
+    spotify: spotifyEcho,
+  });
+  const pool = await v.buildSpotifyPool([seed('A', 'One')], []);
+  assert.deepEqual(pool.map((p) => p.title), ['A1', 'B1']);
+});
+
+test('generateVibeSet uses one record per artist and no Spotify song by an artist already on vinyl', async () => {
+  routeByHost({
+    local: () => ({ json: [{ artist: 'Seed Artist A', album: 'Fits' }, { artist: 'Seed Artist A', album: 'Fits Too' }, { artist: 'Nope', album: 'Off' }] }),
+    lastfm: (url) => {
+      const m = url.searchParams.get('method');
+      if (m === 'track.getsimilar') return { json: { similartracks: { track: [
+        { name: 'By Vinyl Artist', artist: { name: 'Seed Artist A' }, match: '1' },
+        ...Array.from({ length: 8 }, (_, i) => ({ name: `S${url.searchParams.get('track')}${i}`, artist: { name: `Art ${url.searchParams.get('track')}${i}` }, match: '0.5' })),
+      ] } } };
+      if (m === 'album.getinfo') return { json: { album: { tracks: { track: [{ name: `${url.searchParams.get('album')} Song` }] } } } };
+      if (m === 'artist.gettoptags') return { json: { toptags: { tag: url.searchParams.get('artist') === 'Nope' ? [] : [{ name: 'son', count: '100' }] } } };
+      return { json: {} };
+    },
+    spotify: spotifyEcho,
+  });
+  await v.generateVibeSet([seed('Seed Artist A', 'g1'), seed('Seed Artist B', 'g2'), seed('Seed Artist C', 'g3')], 8, () => {}, 'mixed');
+  const tracks = JSON.parse(localStorage.getItem('csdj.tracks'));
+  const byA = tracks.filter((t) => t.artist === 'Seed Artist A');
+  assert.equal(byA.length, 1, JSON.stringify(byA.map((t) => [t.source, t.title])));
+  assert.equal(byA[0].source, 'vinyl');
 });

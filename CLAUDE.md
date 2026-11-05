@@ -29,10 +29,13 @@ Full design rationale: `docs/superpowers/specs/2026-09-16-coffee-shop-dj-design.
 - **Last.fm is the vibe source** (Spotify's recommendations/audio-features
   are closed to new apps): `js/lastfm.js` (throttled 5 req/s, cached in
   `localStorage` `csdj.lastfmCache`; DJ's free API key in Settings →
-  Last.fm). `js/vibeScore.js` scores collection records against 3 seed
-  songs (0.7 × artist similarity + 0.3 × tag cosine, fit ≥ 0.35).
-  `js/vibeSet.js` builds the set (+ `discoverSimilar` for the ~10%
-  discovery path in mood-wave Spotify turns). `js/vibePanel.js` is the UI.
+  Last.fm). The 3 seeds define a **genre, not a band list**: they're
+  never added to the set and each artist appears at most once.
+  `js/vibeScore.js` scores collection records (0.4 × artist similarity +
+  0.6 × genre-tag cosine, fit ≥ 0.45). `js/vibeSet.js` builds the set:
+  Spotify pool = Last.fm similar tracks interleaved with shuffled top tracks
+  of the seeds' top 3 genre tags (`seedGenres`), one song per artist (+
+  `discoverSimilar` for the ~10% discovery path in mood-wave turns). `js/vibePanel.js` is the UI.
 - `js/songPicker.js` names a real song for every vinyl (no more
   "(DJ's choice)" unless Last.fm and Spotify both fail).
   `js/matching.js` holds the match rules: loose (any version) for

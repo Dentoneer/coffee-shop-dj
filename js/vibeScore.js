@@ -1,13 +1,13 @@
 // How well does each record in the collection fit the vibe of 3 seed songs?
-// Last.fm artist similarity does most of the work (a seed artist itself is a
-// perfect hit), genre-tag overlap breaks ties. Tags alone can't make a record
-// fit - "folk" is too broad to vouch for an artist Last.fm never relates to
-// the seeds.
+// The seeds describe a GENRE, not bands the DJ wants to hear, so genre-tag
+// overlap does most of the work (0.6) and Last.fm artist similarity the rest
+// (0.4). A seed's own artist gets no automatic pass - it fits only if its
+// records share the genre too.
 
-import { getSimilarArtists, getArtistTopTags } from './lastfm.js?v=20261105mix';
-import { normalizeText } from './matching.js?v=20261105mix';
+import { getSimilarArtists, getArtistTopTags } from './lastfm.js?v=20261105genre';
+import { normalizeText } from './matching.js?v=20261105genre';
 
-export const FIT_THRESHOLD = 0.35;
+export const FIT_THRESHOLD = 0.45;
 
 const key = (name) => normalizeText(name).replace(/^the /, '');
 
@@ -24,7 +24,7 @@ export function scoreArtist(artist, seedProfile, artistTags = []) {
   const k = key(artist);
   const direct = seedProfile.seedNames.has(k) ? 1 : (seedProfile.similar.get(k) ?? 0);
   const tags = new Map(artistTags.map((t) => [t.name, t.count]));
-  return 0.7 * direct + 0.3 * cosine(tags, seedProfile.tags);
+  return 0.4 * direct + 0.6 * cosine(tags, seedProfile.tags);
 }
 
 export async function buildSeedProfile(seedArtists) {

@@ -1,17 +1,17 @@
-import { Store, newId } from './store.js?v=20261105mix';
-import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection, placeNewVinyl, leaveSequenceMode, songEditPatch } from './plan.js?v=20261105mix';
-import { renderTrackForm } from './trackForm.js?v=20261105mix';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20261105mix';
-import { createTapTempo } from './tapTempo.js?v=20261105mix';
-import { syncPlaylists } from './spotifySync.js?v=20261105mix';
-import { loadSavedSet, summaryLine } from './savedSets.js?v=20261105mix';
-import { saveSetEverywhere } from './spotifySave.js?v=20261105mix';
-import { renderMoodWave, PRESETS } from './moodWave.js?v=20261105mix';
-import { generateCrate } from './crateGenerator.js?v=20261105mix';
-import { pickSongForRecord } from './songPicker.js?v=20261105mix';
-import { renderSequenceTurn, renderSequenceList } from './sequenceView.js?v=20261105mix';
-import { renderVibePanel } from './vibePanel.js?v=20261105mix';
-import { discoverSimilar } from './vibeSet.js?v=20261105mix';
+import { Store, newId } from './store.js?v=20261105genre';
+import { computeLiveSnapshot, markPlayed, insertVinylTrack, getBridgeTarget, getPlanDirection, placeNewVinyl, leaveSequenceMode, songEditPatch } from './plan.js?v=20261105genre';
+import { renderTrackForm } from './trackForm.js?v=20261105genre';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20261105genre';
+import { createTapTempo } from './tapTempo.js?v=20261105genre';
+import { syncPlaylists } from './spotifySync.js?v=20261105genre';
+import { loadSavedSet, summaryLine } from './savedSets.js?v=20261105genre';
+import { saveSetEverywhere } from './spotifySave.js?v=20261105genre';
+import { renderMoodWave, PRESETS } from './moodWave.js?v=20261105genre';
+import { generateCrate } from './crateGenerator.js?v=20261105genre';
+import { pickSongForRecord } from './songPicker.js?v=20261105genre';
+import { renderSequenceTurn, renderSequenceList } from './sequenceView.js?v=20261105genre';
+import { renderVibePanel } from './vibePanel.js?v=20261105genre';
+import { discoverSimilar } from './vibeSet.js?v=20261105genre';
 
 // Fraction of Spotify bridge picks that come from a fresh catalog search
 // instead of the DJ's own playlists, for variety. Playlist tracks carry no

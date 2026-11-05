@@ -2,10 +2,10 @@
 // length, Generate. The set itself is built by vibeSet.generateVibeSet; this
 // is only the UI around it.
 
-import { Store } from './store.js?v=20261105mix';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20261105mix';
-import { hasLastfmKey } from './lastfm.js?v=20261105mix';
-import { generateVibeSet } from './vibeSet.js?v=20261105mix';
+import { Store } from './store.js?v=20261105genre';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20261105genre';
+import { hasLastfmKey } from './lastfm.js?v=20261105genre';
+import { generateVibeSet } from './vibeSet.js?v=20261105genre';
 
 const SEED_COUNT = 3;
 
@@ -28,8 +28,9 @@ export function renderVibePanel(mountEl, { onBuilt, onClose }) {
 
   const seeds = new Array(SEED_COUNT).fill(null);
   mountEl.innerHTML = `
-    <p class="hint">Pick 3 songs that set the vibe, how many songs you want, and the mix. Mixed alternates your
-      records that fit with Spotify songs listeners pair with these, then goes all Spotify when your records run out.</p>
+    <p class="hint">Pick 3 songs that set the genre, how many songs you want, and the mix. The seeds themselves
+      aren't added, and every artist appears once. Mixed alternates your records in that genre with Spotify songs,
+      then goes all Spotify when your records run out.</p>
     <div class="vp-seeds"></div>
     <div class="chip-row vp-mix" style="margin-top:0.6rem;">
       <span class="chip selected" data-mix="mixed">Mixed</span>

@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-11-05 (vibe sets + mix choice live; awaiting real-account check)_
+_Last updated: 2026-11-05 (vibe sets live + genre-driven variety; Save to Spotify not yet confirmed live)_
 
 ## Current status
 
@@ -384,8 +384,13 @@ screenshots) that text stays legible against the new white/pink cards.
       **Mixed / Vinyl only / Spotify only** chips to the Vibe set panel (see
       spec addendum); 66 tests pass, cache tag `20261105mix`. **Merged to
       `master` and pushed 2026-11-05 (fc8a6a3); confirmed live on Pages.**
-      Still pending: the live check with real accounts (DJ adds Last.fm key,
-      logs out/in of Spotify once, builds a vibe set, saves to Spotify).
+      **2026-11-05 live use: DJ confirmed Vibe set works** with their
+      Last.fm key. Feedback: too little variety (Buena Vista twice from
+      3 seeds); seeds should set the genre, not the bands. Changed: seeds
+      no longer added, Spotify pool mixes genre-tag top tracks with similar
+      tracks, one song per artist, record fit genre-weighted (0.4/0.6,
+      cutoff now 0.45). 71 tests, cache tag `20261105genre`. Still not
+      confirmed live: Save to Spotify (needs the DJ's Spotify re-login).
       Deferred minors: Spotify-row Shuffle never exhausts (cycles two songs
       near pool end); double-tap vinyl Shuffle can race; Open set + Save
       makes a new Spotify playlist instead of reusing the saved set's.

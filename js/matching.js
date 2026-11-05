@@ -5,7 +5,7 @@
 //   cut for a live record, a compilation, or a single. No confident match ->
 //   skip, never guess.
 
-import { searchTracks } from './spotify.js?v=20261105mix';
+import { searchTracks } from './spotify.js?v=20261105genre';
 
 export function normalizeText(s) {
   return String(s || '')

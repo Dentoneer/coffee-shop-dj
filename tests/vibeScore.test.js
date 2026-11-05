@@ -15,8 +15,12 @@ const profile = {
   tags: FOLK,
 };
 
-test('seed artist itself scores >= 0.7', () => {
-  assert.ok(vs.scoreArtist('Fleet Foxes', profile, []) >= 0.7);
+test('a seed artist with no shared genre does not fit on its own', () => {
+  assert.ok(vs.scoreArtist('Fleet Foxes', profile, []) < vs.FIT_THRESHOLD);
+});
+
+test('a seed artist in the same genre fits', () => {
+  assert.ok(vs.scoreArtist('Fleet Foxes', profile, [{ name: 'indie folk', count: 100 }, { name: 'folk', count: 80 }]) >= vs.FIT_THRESHOLD);
 });
 
 test('similar artist with match 0.6 and shared tags fits', () => {
@@ -29,9 +33,9 @@ test('off-vibe record does not fit', () => {
   assert.ok(s < vs.FIT_THRESHOLD, `score ${s}`);
 });
 
-test('tag overlap alone is not enough to fit', () => {
+test('same genre fits even when Last.fm never relates the artist to the seeds', () => {
   const s = vs.scoreArtist('Random Folk Act', profile, [{ name: 'indie folk', count: 100 }, { name: 'folk', count: 80 }, { name: 'acoustic', count: 60 }]);
-  assert.ok(s < vs.FIT_THRESHOLD, `score ${s}`);
+  assert.ok(s >= vs.FIT_THRESHOLD, `score ${s}`);
 });
 
 test('buildSeedProfile merges similar artists (max match) and seed tags', async () => {

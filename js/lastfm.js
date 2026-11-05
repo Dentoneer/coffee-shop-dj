@@ -5,7 +5,7 @@
 // guideline and cached in localStorage (artist/album data rarely changes, so
 // the ~189-record collection is only fetched once).
 
-import { Store } from './store.js?v=20261105mix';
+import { Store } from './store.js?v=20261105genre';
 
 const API = 'https://ws.audioscrobbler.com/2.0/';
 const CACHE_KEY = 'csdj.lastfmCache';
@@ -99,6 +99,19 @@ export async function getSimilarTracks(artist, title, limit = 50) {
     title: t.name,
     match: Number(t.match) || 0,
   }));
+}
+
+export async function getTrackTopTags(artist, title) {
+  const d = await lastfmGet('track.gettoptags', { artist, track: title });
+  return asArray(d.toptags?.tag)
+    .slice(0, 10)
+    .map((t) => ({ name: String(t.name).toLowerCase(), count: Number(t.count) || 0 }));
+}
+
+/** Most-played songs for a genre tag ("son cubano", "bossa nova"...). */
+export async function getTagTopTracks(tag, limit = 50) {
+  const d = await lastfmGet('tag.gettoptracks', { tag, limit: String(limit) });
+  return asArray(d.tracks?.track).map((t) => ({ artist: t.artist?.name || '', title: t.name }));
 }
 
 export async function getSimilarArtists(artist, limit = 250) {

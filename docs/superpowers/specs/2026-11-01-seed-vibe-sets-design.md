@@ -251,3 +251,14 @@ to the song count. Mixed is the behavior above. Vinyl only ranks the whole
 collection by vibe and takes the top `count` records (no fit threshold, so
 the DJ always gets the number asked for, closest matches first). Spotify
 only uses the seeds + Last.fm pool and never scores the collection.
+
+## Addendum 2026-11-05: seeds set the genre, not the bands (DJ feedback)
+
+First live use: a set from 3 seeds came back with Buena Vista Social Club as
+songs 1 and 3. The DJ wants the seeds to describe a genre, not bands to hear.
+Changed: the seed songs are no longer added to the set; the Spotify pool
+interleaves Last.fm similar tracks with shuffled top tracks of the seeds' top
+3 genre tags (junk tags like "seen live" and seed-artist-name tags dropped);
+at most one song per artist across the whole set (vinyl and Spotify); record
+fit is genre-weighted (0.4 artist similarity + 0.6 tag cosine, cutoff 0.45),
+so a seed's own artist no longer qualifies automatically.

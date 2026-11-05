@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-11-05 (vibe sets + mix choice built on branch; awaiting merge + live check)_
+_Last updated: 2026-11-05 (vibe sets + mix choice live; awaiting real-account check)_
 
 ## Current status
 
@@ -382,9 +382,10 @@ screenshots) that text stays legible against the new white/pink cards.
       review done 2026-11-01 (0 Critical; 3 fixed: stale Spotify link on
       vinyl edit, Last.fm key errors hidden, collab seeds). 2026-11-05: added
       **Mixed / Vinyl only / Spotify only** chips to the Vibe set panel (see
-      spec addendum); 66 tests pass, cache tag `20261105mix`. Waiting on the
-      DJ to OK merge + push, then the live check (Last.fm key + Spotify
-      re-login).
+      spec addendum); 66 tests pass, cache tag `20261105mix`. **Merged to
+      `master` and pushed 2026-11-05 (fc8a6a3); confirmed live on Pages.**
+      Still pending: the live check with real accounts (DJ adds Last.fm key,
+      logs out/in of Spotify once, builds a vibe set, saves to Spotify).
       Deferred minors: Spotify-row Shuffle never exhausts (cycles two songs
       near pool end); double-tap vinyl Shuffle can race; Open set + Save
       makes a new Spotify playlist instead of reusing the saved set's.

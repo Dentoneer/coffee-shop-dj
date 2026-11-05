@@ -5,11 +5,11 @@
 // not a fresh text search. Mood-wave ("alternate") sets keep liveset.js's
 // original gap-based rendering untouched.
 
-import { Store } from './store.js?v=20261101vibe';
-import { markPlayed } from './plan.js?v=20261101vibe';
-import { searchTracks, isLoggedIn } from './spotify.js?v=20261101vibe';
-import { normalizeText } from './matching.js?v=20261101vibe';
-import { pickSongForRecord } from './songPicker.js?v=20261101vibe';
+import { Store } from './store.js?v=20261105mix';
+import { markPlayed } from './plan.js?v=20261105mix';
+import { searchTracks, isLoggedIn } from './spotify.js?v=20261105mix';
+import { normalizeText } from './matching.js?v=20261105mix';
+import { pickSongForRecord } from './songPicker.js?v=20261105mix';
 
 export const vinylKey = (r) => `${normalizeText(r.artist).replace(/^the /, '')}|${normalizeText(r.album)}`;
 

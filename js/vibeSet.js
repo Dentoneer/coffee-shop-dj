@@ -5,12 +5,12 @@
 // only. Nothing is written to the live set (or to Spotify) until every
 // lookup has succeeded, so a failure never leaves a half-built set.
 
-import { Store, newId } from './store.js?v=20261101vibe';
-import { hasLastfmKey, getSimilarTracks, LastfmError } from './lastfm.js?v=20261101vibe';
-import { findSpotifyTrack, normalizeText, normalizeTitle } from './matching.js?v=20261101vibe';
-import { buildSeedProfile, scoreRecords, FIT_THRESHOLD } from './vibeScore.js?v=20261101vibe';
-import { pickSongForRecord } from './songPicker.js?v=20261101vibe';
-import { loadCollection } from './crateGenerator.js?v=20261101vibe';
+import { Store, newId } from './store.js?v=20261105mix';
+import { hasLastfmKey, getSimilarTracks, LastfmError } from './lastfm.js?v=20261105mix';
+import { findSpotifyTrack, normalizeText, normalizeTitle } from './matching.js?v=20261105mix';
+import { buildSeedProfile, scoreRecords, FIT_THRESHOLD } from './vibeScore.js?v=20261105mix';
+import { pickSongForRecord } from './songPicker.js?v=20261105mix';
+import { loadCollection } from './crateGenerator.js?v=20261105mix';
 
 // Spotify joins collaborators ("Daft Punk, Pharrell Williams"); Last.fm
 // only knows the lead artist.
@@ -133,31 +133,44 @@ export function vinylTrack(record, song) {
   };
 }
 
-export async function generateVibeSet(seeds, count, onProgress = () => {}) {
+/**
+ * mix: 'mixed' (vinyl/Spotify alternate while fitting records last, then
+ * Spotify), 'vinyl' (records only - the whole collection ranked by vibe, so
+ * the DJ always gets `count` songs, closest matches first), or 'spotify'
+ * (seeds + Last.fm songs only; the collection is never scored).
+ */
+export async function generateVibeSet(seeds, count, onProgress = () => {}, mix = 'mixed') {
   if (!hasLastfmKey()) throw new LastfmError('Vibe sets use Last.fm. Add your free API key in Settings → Last.fm first.');
 
-  onProgress('Finding songs like your seeds…');
-  const pool = await buildSpotifyPool(seeds, seeds.map((s) => s.uri), count + 20);
+  let pool = [];
+  if (mix !== 'vinyl') {
+    onProgress('Finding songs like your seeds…');
+    pool = await buildSpotifyPool(seeds, seeds.map((s) => s.uri), count + 20);
+  }
 
-  onProgress('Matching your collection…');
-  const collection = await loadCollection();
-  const profile = await buildSeedProfile(seeds.map((s) => primaryArtist(s.artist)));
-  const scored = await scoreRecords(collection, profile, (done, total) => {
-    onProgress('Learning your collection…', done, total);
-  });
-  const fitting = scored.filter((r) => r.score >= FIT_THRESHOLD);
+  let ranked = [];
+  if (mix !== 'spotify') {
+    onProgress('Matching your collection…');
+    const collection = await loadCollection();
+    const profile = await buildSeedProfile(seeds.map((s) => primaryArtist(s.artist)));
+    const scored = await scoreRecords(collection, profile, (done, total) => {
+      onProgress('Learning your collection…', done, total);
+    });
+    ranked = mix === 'vinyl' ? scored : scored.filter((r) => r.score >= FIT_THRESHOLD);
+  }
 
   onProgress('Picking songs from your records…');
   const vinyl = [];
   let used = 0;
-  const maxVinyl = Math.ceil(count / 2);
-  for (; used < fitting.length && vinyl.length < maxVinyl; used++) {
-    const { record } = fitting[used];
+  const maxVinyl = mix === 'vinyl' ? count : Math.ceil(count / 2);
+  for (; used < ranked.length && vinyl.length < maxVinyl; used++) {
+    const { record } = ranked[used];
     const song = await pickSongForRecord(record);
     if (song) vinyl.push(vinylTrack(record, song));
   }
+  if (mix === 'vinyl' && vinyl.length === 0) throw new Error('Could not name a song for any of your records — check your Last.fm key or try Mixed.');
 
-  const spotifyCands = [...seeds, ...pool].map(spotifyTrack);
+  const spotifyCands = mix === 'vinyl' ? [] : [...seeds, ...pool].map(spotifyTrack);
   const set = assembleSequence(vinyl, spotifyCands, count);
   const usedUris = new Set(set.map((t) => t.spotifyUri));
 
@@ -169,7 +182,7 @@ export async function generateVibeSet(seeds, count, onProgress = () => {}) {
   Store.saveLiveState({ lastPlayedTrackId: null, turn: 'vinyl' });
   Store.saveVibePool({
     spotify: pool.filter((p) => !usedUris.has(p.uri)),
-    vinyl: fitting.slice(used),
+    vinyl: ranked.slice(used),
   });
   Store.setLiveSpotifyPlaylist(null);
 

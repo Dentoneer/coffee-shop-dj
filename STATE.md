@@ -1,6 +1,6 @@
 # State
 
-_Last updated: 2026-11-01 (seed-vibe sets built; awaiting live check)_
+_Last updated: 2026-11-05 (vibe sets + mix choice built on branch; awaiting merge + live check)_
 
 ## Current status
 
@@ -378,9 +378,16 @@ screenshots) that text stays legible against the new white/pink cards.
       /playlists/{id}/items`, `/tracks` fallback) are untested live; if
       Save fails, capture the raw response and fix the shape. Tune
       `FIT_THRESHOLD` (0.35) after a real run if too few/many records fit.
-      Branch `seed-vibe-sets` (not yet merged to `master`/live): final
-      whole-branch code review running; fix Critical/Important findings,
-      then merge + push, then the live check with the DJ.
+      Branch `seed-vibe-sets` (not yet merged to `master`/live). Final
+      review done 2026-11-01 (0 Critical; 3 fixed: stale Spotify link on
+      vinyl edit, Last.fm key errors hidden, collab seeds). 2026-11-05: added
+      **Mixed / Vinyl only / Spotify only** chips to the Vibe set panel (see
+      spec addendum); 66 tests pass, cache tag `20261105mix`. Waiting on the
+      DJ to OK merge + push, then the live check (Last.fm key + Spotify
+      re-login).
+      Deferred minors: Spotify-row Shuffle never exhausts (cycles two songs
+      near pool end); double-tap vinyl Shuffle can race; Open set + Save
+      makes a new Spotify playlist instead of reusing the saved set's.
 
 - [x] Shame Boys reskin committed and pushed to `master` (6d623fc,
       2026-11-01); Pages redeploys automatically, hard-refresh to see it.

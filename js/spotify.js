@@ -3,7 +3,7 @@
 // search (track lookup, album art) and saving sets as private playlists; no
 // playback control, no audio-features.
 
-import { Store } from './store.js?v=20261101vibe';
+import { Store } from './store.js?v=20261105mix';
 
 const AUTH_URL = 'https://accounts.spotify.com/authorize';
 const TOKEN_URL = 'https://accounts.spotify.com/api/token';

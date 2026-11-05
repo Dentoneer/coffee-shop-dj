@@ -8,9 +8,9 @@
 // When logged into Spotify, the exact same-album recording is also looked up
 // for art + Save to Spotify; spotifyUri stays null unless it's that version.
 
-import { hasLastfmKey, getAlbumTrackTitles, getArtistTopTracks } from './lastfm.js?v=20261101vibe';
-import { findExactVinylOnSpotify, normalizeTitle, artistMatches } from './matching.js?v=20261101vibe';
-import { isLoggedIn, searchAlbums, getAlbumTracks } from './spotify.js?v=20261101vibe';
+import { hasLastfmKey, getAlbumTrackTitles, getArtistTopTracks } from './lastfm.js?v=20261105mix';
+import { findExactVinylOnSpotify, normalizeTitle, artistMatches } from './matching.js?v=20261105mix';
+import { isLoggedIn, searchAlbums, getAlbumTracks } from './spotify.js?v=20261105mix';
 
 const loose = (t) => normalizeTitle(t, { loose: true });
 

@@ -4,8 +4,8 @@
 // fit - "folk" is too broad to vouch for an artist Last.fm never relates to
 // the seeds.
 
-import { getSimilarArtists, getArtistTopTags } from './lastfm.js?v=20261101vibe';
-import { normalizeText } from './matching.js?v=20261101vibe';
+import { getSimilarArtists, getArtistTopTags } from './lastfm.js?v=20261105mix';
+import { normalizeText } from './matching.js?v=20261105mix';
 
 export const FIT_THRESHOLD = 0.35;
 

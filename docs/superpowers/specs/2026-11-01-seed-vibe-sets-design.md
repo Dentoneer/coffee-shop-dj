@@ -243,3 +243,11 @@ Export/Import must round-trip the new shape. Old saved sets must still load.
 - Button name and panel layout.
 - Where the 3 seeds sit in the set.
 - Fallback wording and error copy.
+
+## Addendum 2026-11-05: mix choice (requested by the DJ)
+
+The Vibe set panel has a **Mixed / Vinyl only / Spotify only** choice next
+to the song count. Mixed is the behavior above. Vinyl only ranks the whole
+collection by vibe and takes the top `count` records (no fit threshold, so
+the DJ always gets the number asked for, closest matches first). Spotify
+only uses the seeds + Last.fm pool and never scores the collection.

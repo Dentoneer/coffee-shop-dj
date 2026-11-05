@@ -1,6 +1,6 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { installEnv, resetEnv, routeByHost, setSettings, fakeSpotifyLogin } from './helpers/env.js';
+import { installEnv, resetEnv, routeByHost, setSettings, fakeSpotifyLogin, fetchCalls } from './helpers/env.js';
 
 installEnv();
 const v = await import('../js/vibeSet.js');
@@ -127,4 +127,45 @@ test('collaboration seeds query Last.fm with the first artist', async () => {
   });
   const pool = await v.buildSpotifyPool([seed('Daft Punk, Pharrell Williams', 'Get Lucky')], []);
   assert.deepEqual(pool.map((p) => p.title), ['Hit']);
+});
+
+function mixRoutes() {
+  routeByHost({
+    local: () => ({ json: [{ artist: 'Seed Artist A', album: 'Fits' }, { artist: 'Nope', album: 'Off' }] }),
+    lastfm: (url) => {
+      const m = url.searchParams.get('method');
+      if (m === 'track.getsimilar') return { json: { similartracks: { track: Array.from({ length: 12 }, (_, i) => ({ name: `Sim ${url.searchParams.get('track')}${i}`, artist: { name: 'Q' }, match: '0.5' })) } } };
+      if (m === 'album.getinfo') return { json: { album: { tracks: { track: [{ name: `${url.searchParams.get('album')} Song` }] } } } };
+      return { json: {} };
+    },
+    spotify: spotifyEcho,
+  });
+}
+const mixSeeds = () => [seed('Seed Artist A', 'm1'), seed('Seed Artist B', 'm2'), seed('Seed Artist C', 'm3')];
+const liveSources = () => {
+  const tracks = JSON.parse(localStorage.getItem('csdj.tracks'));
+  return JSON.parse(localStorage.getItem('csdj.planOrder')).map((id) => tracks.find((t) => t.id === id).source);
+};
+
+test('mix "vinyl" builds only vinyl, best vibe match first, even below the fit threshold', async () => {
+  mixRoutes();
+  const r = await v.generateVibeSet(mixSeeds(), 2, () => {}, 'vinyl');
+  assert.deepEqual(liveSources(), ['vinyl', 'vinyl']);
+  assert.equal(r.spotifyCount, 0);
+  const tracks = JSON.parse(localStorage.getItem('csdj.tracks'));
+  assert.equal(tracks.find((t) => t.id === JSON.parse(localStorage.getItem('csdj.planOrder'))[0]).title, 'Fits Song');
+});
+
+test('mix "spotify" builds only Spotify and never loads the collection', async () => {
+  mixRoutes();
+  const r = await v.generateVibeSet(mixSeeds(), 6, () => {}, 'spotify');
+  assert.deepEqual(liveSources(), Array(6).fill('spotify'));
+  assert.equal(r.vinylCount, 0);
+  assert.equal(fetchCalls.some((c) => c.url.searchParams.get('method') === 'artist.gettoptags'), false, 'collection was scored');
+});
+
+test('mix defaults to "mixed"', async () => {
+  mixRoutes();
+  await v.generateVibeSet(mixSeeds(), 4, () => {});
+  assert.deepEqual(liveSources(), ['vinyl', 'spotify', 'spotify', 'spotify']);
 });
